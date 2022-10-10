@@ -329,6 +329,8 @@ func (j *Job) ClientHelloSpec() (clientHelloSpec tls.ClientHelloSpec) {
 	//var clientHelloSpec tls.ClientHelloSpec
 	if j.Fprint == "chrome-105" {
 		clientHelloSpec = specChrome105()
+	} else if j.Fprint == "chrome-62" {
+		clientHelloSpec = specChrome62()
 	} else if j.Fprint == "go" {
 		clientHelloSpec = specGolang()
 	} else if j.Fprint == "openssl" {
@@ -465,7 +467,7 @@ func main() {
 
 		for _, h := range domains {
 			for _, s := range domains {
-				for _, fp := range []string{"go", "openssl", "chrome-105"} {
+				for _, fp := range []string{"go", "openssl", "chrome-105", "chrome-62"} {
 					job := Job{Host: h, Sni: s, Fprint: fp, Port: 443}
 					jobs <- job
 				}
