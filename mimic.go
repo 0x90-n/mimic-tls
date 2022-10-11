@@ -318,22 +318,11 @@ func specRandom() (tls.ClientHelloSpec, error) {
 
 	p := tls.ClientHelloSpec{}
 
-	config := tls.Config{ServerName: "example.com"}
-	dialConn, err := net.DialTimeout("tcp", "8.8.8.8", 2)
-	if err != nil {
-		return p, fmt.Errorf("net.DialTimeout error: %+v", err)
-	}
-	uTlsConn := tls.UClient(dialConn, &config, tls.HelloCustom)
-	defer uTlsConn.Close()
-
 	seed, err := tls.NewPRNGSeed()
 	if err != nil {
 		return p, err
 	}
-
-	uTlsConn.ClientHelloID.Seed = seed
-
-	r, err := newPRNGWithSeed(uTlsConn.ClientHelloID.Seed)
+	r, err := tls.newPRNGWithSeed(seed)
 	if err != nil {
 		return p, err
 	}
@@ -467,7 +456,7 @@ func specRandom() (tls.ClientHelloSpec, error) {
 		}
 		pskExchangeModes := tls.PSKKeyExchangeModesExtension{[]uint8{tls.pskModeDHE}}
 		supportedVersionsExt := tls.SupportedVersionsExtension{
-			Versions: makeSupportedVersions(p.TLSVersMin, p.TLSVersMax),
+			Versions: tls.makeSupportedVersions(p.TLSVersMin, p.TLSVersMax),
 		}
 		p.Extensions = append(p.Extensions, &ks, &pskExchangeModes, &supportedVersionsExt)
 
@@ -482,14 +471,14 @@ func specRandom() (tls.ClientHelloSpec, error) {
 			// seed to create a new, independent PRNG, so that a seed used
 			// with the previous version of generateRandomizedSpec will
 			// produce the exact same spec as long as ALPS isn't selected.
-			r, err := newPRNGWithSaltedSeed(seed, "ALPS")
+			r, err := tls.newPRNGWithSaltedSeed(seed, "ALPS")
 			if err != nil {
 				return p, err
 			}
 			if r.FlipWeightedCoin(0.33) {
 				// As with the ALPN case above, default to something popular
 				// (unlike ALPN, ALPS can't yet be specified in uconn.config).
-				alps := &ApplicationSettingsExtension{SupportedProtocols: []string{"h2"}}
+				alps := &tls.ApplicationSettingsExtension{SupportedProtocols: []string{"http/1.1"}}
 				p.Extensions = append(p.Extensions, alps)
 			}
 		}
