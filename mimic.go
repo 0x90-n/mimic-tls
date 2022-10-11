@@ -5,12 +5,13 @@ import (
 	"crypto/sha256"
 	"flag"
 	"fmt"
-	tls "github.com/refraction-networking/utls"
 	"log"
 	"net"
 	"os"
 	"sync"
 	"time"
+
+	tls "github.com/refraction-networking/utls"
 )
 
 func usage() {
@@ -25,57 +26,56 @@ Options:
 }
 
 func specChrome62() tls.ClientHelloSpec {
-		return tls.ClientHelloSpec{
-			TLSVersMax: tls.VersionTLS12,
-			TLSVersMin: tls.VersionTLS10,
-			CipherSuites: []uint16{
-				tls.GREASE_PLACEHOLDER,
-				tls.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,
-				tls.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
-				tls.TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,
-				tls.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
-				tls.TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305,
-				tls.TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305,
-				tls.TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA,
-				tls.TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA,
-				tls.TLS_RSA_WITH_AES_128_GCM_SHA256,
-				tls.TLS_RSA_WITH_AES_256_GCM_SHA384,
-				tls.TLS_RSA_WITH_AES_128_CBC_SHA,
-				tls.TLS_RSA_WITH_AES_256_CBC_SHA,
-				tls.TLS_RSA_WITH_3DES_EDE_CBC_SHA,
+	return tls.ClientHelloSpec{
+		TLSVersMax: tls.VersionTLS12,
+		TLSVersMin: tls.VersionTLS10,
+		CipherSuites: []uint16{
+			tls.GREASE_PLACEHOLDER,
+			tls.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,
+			tls.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
+			tls.TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,
+			tls.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
+			tls.TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305,
+			tls.TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305,
+			tls.TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA,
+			tls.TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA,
+			tls.TLS_RSA_WITH_AES_128_GCM_SHA256,
+			tls.TLS_RSA_WITH_AES_256_GCM_SHA384,
+			tls.TLS_RSA_WITH_AES_128_CBC_SHA,
+			tls.TLS_RSA_WITH_AES_256_CBC_SHA,
+			tls.TLS_RSA_WITH_3DES_EDE_CBC_SHA,
+		},
+		CompressionMethods: []byte{0x00}, // compressionNone
+		Extensions: []tls.TLSExtension{
+			&tls.UtlsGREASEExtension{},
+			&tls.RenegotiationInfoExtension{Renegotiation: tls.RenegotiateOnceAsClient},
+			&tls.SNIExtension{},
+			&tls.UtlsExtendedMasterSecretExtension{},
+			&tls.SessionTicketExtension{},
+			&tls.SignatureAlgorithmsExtension{SupportedSignatureAlgorithms: []tls.SignatureScheme{
+				tls.ECDSAWithP256AndSHA256,
+				tls.PSSWithSHA256,
+				tls.PKCS1WithSHA256,
+				tls.ECDSAWithP384AndSHA384,
+				tls.PSSWithSHA384,
+				tls.PKCS1WithSHA384,
+				tls.PSSWithSHA512,
+				tls.PKCS1WithSHA512,
+				tls.PKCS1WithSHA1},
 			},
-			CompressionMethods: []byte{0x00,}, // compressionNone
-			Extensions: []tls.TLSExtension{
-				&tls.UtlsGREASEExtension{},
-				&tls.RenegotiationInfoExtension{Renegotiation: tls.RenegotiateOnceAsClient},
-				&tls.SNIExtension{},
-				&tls.UtlsExtendedMasterSecretExtension{},
-				&tls.SessionTicketExtension{},
-				&tls.SignatureAlgorithmsExtension{SupportedSignatureAlgorithms: []tls.SignatureScheme{
-					tls.ECDSAWithP256AndSHA256,
-					tls.PSSWithSHA256,
-					tls.PKCS1WithSHA256,
-					tls.ECDSAWithP384AndSHA384,
-					tls.PSSWithSHA384,
-					tls.PKCS1WithSHA384,
-					tls.PSSWithSHA512,
-					tls.PKCS1WithSHA512,
-					tls.PKCS1WithSHA1},
-				},
-				&tls.StatusRequestExtension{},
-				&tls.SCTExtension{},
-				&tls.ALPNExtension{AlpnProtocols: []string{"h2", "http/1.1"}},
-				&tls.FakeChannelIDExtension{},
-				&tls.SupportedPointsExtension{SupportedPoints: []byte{0x00,}},// pointFormatUncompressed
-				&tls.SupportedCurvesExtension{[]tls.CurveID{tls.CurveID(tls.GREASE_PLACEHOLDER),
-					tls.X25519, tls.CurveP256, tls.CurveP384}},
-				&tls.UtlsGREASEExtension{},
-				&tls.UtlsPaddingExtension{GetPaddingLen: tls.BoringPaddingStyle},
-			},
-			GetSessionID: sha256.Sum256,
-		}
+			&tls.StatusRequestExtension{},
+			&tls.SCTExtension{},
+			&tls.ALPNExtension{AlpnProtocols: []string{"h2", "http/1.1"}},
+			&tls.FakeChannelIDExtension{},
+			&tls.SupportedPointsExtension{SupportedPoints: []byte{0x00}}, // pointFormatUncompressed
+			&tls.SupportedCurvesExtension{[]tls.CurveID{tls.CurveID(tls.GREASE_PLACEHOLDER),
+				tls.X25519, tls.CurveP256, tls.CurveP384}},
+			&tls.UtlsGREASEExtension{},
+			&tls.UtlsPaddingExtension{GetPaddingLen: tls.BoringPaddingStyle},
+		},
+		GetSessionID: sha256.Sum256,
+	}
 }
-
 
 func specChrome105() tls.ClientHelloSpec {
 	return tls.ClientHelloSpec{
@@ -314,6 +314,196 @@ func specOpenssl() tls.ClientHelloSpec {
 	}
 }
 
+func specRandom() (tls.ClientHelloSpec, error) {
+
+	p := tls.ClientHelloSpec{}
+
+	config := tls.Config{ServerName: "example.com"}
+	dialConn, err := net.DialTimeout("tcp", "8.8.8.8", 2)
+	if err != nil {
+		return p, fmt.Errorf("net.DialTimeout error: %+v", err)
+	}
+	uTlsConn := tls.UClient(dialConn, &config, tls.HelloCustom)
+	defer uTlsConn.Close()
+
+	seed, err := tls.NewPRNGSeed()
+	if err != nil {
+		return p, err
+	}
+
+	uTlsConn.ClientHelloID.Seed = seed
+
+	r, err := newPRNGWithSeed(uTlsConn.ClientHelloID.Seed)
+	if err != nil {
+		return p, err
+	}
+
+	var WithALPN bool
+
+	if r.FlipWeightedCoin(0.7) {
+		WithALPN = true
+	} else {
+		WithALPN = false
+	}
+
+	p.CipherSuites = make([]uint16, len(tls.defaultCipherSuites()))
+	copy(p.CipherSuites, tls.defaultCipherSuites())
+	shuffledSuites, err := tls.shuffledCiphers(r)
+	if err != nil {
+		return p, err
+	}
+
+	if r.FlipWeightedCoin(0.4) {
+		p.TLSVersMin = tls.VersionTLS10
+		p.TLSVersMax = tls.VersionTLS13
+		tls13ciphers := make([]uint16, len(tls.defaultCipherSuitesTLS13()))
+		copy(tls13ciphers, tls.defaultCipherSuitesTLS13())
+		r.rand.Shuffle(len(tls13ciphers), func(i, j int) {
+			tls13ciphers[i], tls13ciphers[j] = tls13ciphers[j], tls13ciphers[i]
+		})
+		// appending TLS 1.3 ciphers before TLS 1.2, since that's what popular implementations do
+		shuffledSuites = append(tls13ciphers, shuffledSuites...)
+
+		// TLS 1.3 forbids RC4 in any configurations
+		shuffledSuites = tls.removeRC4Ciphers(shuffledSuites)
+	} else {
+		p.TLSVersMin = tls.VersionTLS10
+		p.TLSVersMax = tls.VersionTLS12
+	}
+
+	p.CipherSuites = tls.removeRandomCiphers(r, shuffledSuites, 0.4)
+
+	sni := tls.SNIExtension{}
+	sessionTicket := tls.SessionTicketExtension{}
+
+	sigAndHashAlgos := []tls.SignatureScheme{
+		tls.ECDSAWithP256AndSHA256,
+		tls.PKCS1WithSHA256,
+		tls.ECDSAWithP384AndSHA384,
+		tls.PKCS1WithSHA384,
+		tls.PKCS1WithSHA1,
+		tls.PKCS1WithSHA512,
+	}
+
+	if r.FlipWeightedCoin(0.63) {
+		sigAndHashAlgos = append(sigAndHashAlgos, tls.ECDSAWithSHA1)
+	}
+	if r.FlipWeightedCoin(0.59) {
+		sigAndHashAlgos = append(sigAndHashAlgos, tls.ECDSAWithP521AndSHA512)
+	}
+	if r.FlipWeightedCoin(0.51) || p.TLSVersMax == tls.VersionTLS13 {
+		// https://tools.ietf.org/html/rfc8446 says "...RSASSA-PSS (which is mandatory in TLS 1.3)..."
+		sigAndHashAlgos = append(sigAndHashAlgos, tls.PSSWithSHA256)
+		if r.FlipWeightedCoin(0.9) {
+			// these usually go together
+			sigAndHashAlgos = append(sigAndHashAlgos, tls.PSSWithSHA384)
+			sigAndHashAlgos = append(sigAndHashAlgos, tls.PSSWithSHA512)
+		}
+	}
+
+	r.rand.Shuffle(len(sigAndHashAlgos), func(i, j int) {
+		sigAndHashAlgos[i], sigAndHashAlgos[j] = sigAndHashAlgos[j], sigAndHashAlgos[i]
+	})
+	sigAndHash := tls.SignatureAlgorithmsExtension{SupportedSignatureAlgorithms: sigAndHashAlgos}
+
+	status := tls.StatusRequestExtension{}
+	sct := tls.SCTExtension{}
+	ems := tls.UtlsExtendedMasterSecretExtension{}
+	points := tls.SupportedPointsExtension{SupportedPoints: []byte{0x00}}
+
+	curveIDs := []tls.CurveID{}
+	if r.FlipWeightedCoin(0.71) || p.TLSVersMax == tls.VersionTLS13 {
+		curveIDs = append(curveIDs, tls.X25519)
+	}
+	curveIDs = append(curveIDs, tls.CurveP256, tls.CurveP384)
+	if r.FlipWeightedCoin(0.46) {
+		curveIDs = append(curveIDs, tls.CurveP521)
+	}
+
+	curves := tls.SupportedCurvesExtension{curveIDs}
+
+	padding := tls.UtlsPaddingExtension{GetPaddingLen: tls.BoringPaddingStyle}
+	reneg := tls.RenegotiationInfoExtension{Renegotiation: tls.RenegotiateOnceAsClient}
+
+	p.Extensions = []tls.TLSExtension{
+		&sni,
+		&sessionTicket,
+		&sigAndHash,
+		&points,
+		&curves,
+	}
+
+	if WithALPN {
+		alpn := tls.ALPNExtension{AlpnProtocols: []string{"h2", "http/1.1"}}
+		p.Extensions = append(p.Extensions, &alpn)
+	}
+
+	if r.FlipWeightedCoin(0.62) || p.TLSVersMax == tls.VersionTLS13 {
+		// always include for TLS 1.3, since TLS 1.3 ClientHellos are often over 256 bytes
+		// and that's when padding is required to work around buggy middleboxes
+		p.Extensions = append(p.Extensions, &padding)
+	}
+	if r.FlipWeightedCoin(0.74) {
+		p.Extensions = append(p.Extensions, &status)
+	}
+	if r.FlipWeightedCoin(0.46) {
+		p.Extensions = append(p.Extensions, &sct)
+	}
+	if r.FlipWeightedCoin(0.75) {
+		p.Extensions = append(p.Extensions, &reneg)
+	}
+	if r.FlipWeightedCoin(0.77) {
+		p.Extensions = append(p.Extensions, &ems)
+	}
+	if p.TLSVersMax == tls.VersionTLS13 {
+		ks := tls.KeyShareExtension{[]tls.KeyShare{
+			{Group: tls.X25519}, // the key for the group will be generated later
+		}}
+		if r.FlipWeightedCoin(0.25) {
+			// do not ADD second keyShare because crypto/tls does not support multiple ecdheParams
+			// TODO: add it back when they implement multiple keyShares, or implement it oursevles
+			// ks.KeyShares = append(ks.KeyShares, KeyShare{Group: CurveP256})
+			ks.KeyShares[0].Group = tls.CurveP256
+		}
+		pskExchangeModes := tls.PSKKeyExchangeModesExtension{[]uint8{tls.pskModeDHE}}
+		supportedVersionsExt := tls.SupportedVersionsExtension{
+			Versions: makeSupportedVersions(p.TLSVersMin, p.TLSVersMax),
+		}
+		p.Extensions = append(p.Extensions, &ks, &pskExchangeModes, &supportedVersionsExt)
+
+		// Randomly add an ALPS extension. ALPS is TLS 1.3-only and may only
+		// appear when an ALPN extension is present
+		// (https://datatracker.ietf.org/doc/html/draft-vvv-tls-alps-01#section-3).
+		// ALPS is a draft specification at this time, but appears in
+		// Chrome/BoringSSL.
+		if WithALPN {
+
+			// ALPS is a new addition to generateRandomizedSpec. Use a salted
+			// seed to create a new, independent PRNG, so that a seed used
+			// with the previous version of generateRandomizedSpec will
+			// produce the exact same spec as long as ALPS isn't selected.
+			r, err := newPRNGWithSaltedSeed(seed, "ALPS")
+			if err != nil {
+				return p, err
+			}
+			if r.FlipWeightedCoin(0.33) {
+				// As with the ALPN case above, default to something popular
+				// (unlike ALPN, ALPS can't yet be specified in uconn.config).
+				alps := &ApplicationSettingsExtension{SupportedProtocols: []string{"h2"}}
+				p.Extensions = append(p.Extensions, alps)
+			}
+		}
+
+		// TODO: randomly add DelegatedCredentialsExtension, once it is
+		// sufficiently popular.
+	}
+	r.rand.Shuffle(len(p.Extensions), func(i, j int) {
+		p.Extensions[i], p.Extensions[j] = p.Extensions[j], p.Extensions[i]
+	})
+
+	return p, nil
+}
+
 type Job struct {
 	Host   string
 	Sni    string
@@ -335,6 +525,11 @@ func (j *Job) ClientHelloSpec() (clientHelloSpec tls.ClientHelloSpec) {
 		clientHelloSpec = specGolang()
 	} else if j.Fprint == "openssl" {
 		clientHelloSpec = specOpenssl()
+	} else if j.Fprint == "random" {
+		clientHelloSpec, err = specRandom()
+		if err != nil {
+			log.Printf("Error while getting random specs\n")
+		}
 	} else {
 		log.Fatalf("Error unknown fprint: %s\n", j.Fprint)
 		clientHelloSpec = tls.ClientHelloSpec{} // nil
@@ -467,7 +662,7 @@ func main() {
 
 		for _, h := range domains {
 			for _, s := range domains {
-				for _, fp := range []string{"go", "openssl", "chrome-105", "chrome-62"} {
+				for _, fp := range []string{"go", "openssl", "chrome-105", "chrome-62", "random"} {
 					job := Job{Host: h, Sni: s, Fprint: fp, Port: 443}
 					jobs <- job
 				}
