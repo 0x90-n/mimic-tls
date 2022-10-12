@@ -6,12 +6,15 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"math"
+	"math/rand"
 	"net"
 	"os"
 	"sync"
 	"time"
 
 	tls "github.com/refraction-networking/utls"
+	"golang.org/x/sys/cpu"
 )
 
 func usage() {
@@ -314,53 +317,160 @@ func specOpenssl() tls.ClientHelloSpec {
 	}
 }
 
-func specRandom() (tls.ClientHelloSpec, error) {
+var (
+	once                        sync.Once
+	varDefaultCipherSuites      []uint16
+	varDefaultCipherSuitesTLS13 []uint16
+)
+
+func getCipherSuites() []uint16 {
+	var topCipherSuites []uint16
+
+	// Check the cpu flags for each platform that has optimized GCM implementations.
+	// Worst case, these variables will just all be false.
+	var (
+		hasGCMAsmAMD64 = cpu.X86.HasAES && cpu.X86.HasPCLMULQDQ
+		hasGCMAsmARM64 = cpu.ARM64.HasAES && cpu.ARM64.HasPMULL
+		// Keep in sync with crypto/aes/cipher_s390x.go.
+		// hasGCMAsmS390X = cpu.S390X.HasAES && cpu.S390X.HasAESCBC && cpu.S390X.HasAESCTR && (cpu.S390X.HasGHASH || cpu.S390X.HasAESGCM)
+		hasGCMAsmS390X = false // [UTLS: couldn't be bothered to make it work, we won't use it]
+
+		hasGCMAsm = hasGCMAsmAMD64 || hasGCMAsmARM64 || hasGCMAsmS390X
+	)
+
+	if hasGCMAsm {
+		// If AES-GCM hardware is provided then prioritise AES-GCM
+		// cipher suites.
+		topCipherSuites = []uint16{
+			tls.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
+			tls.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
+			tls.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,
+			tls.TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,
+			tls.TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305,
+			tls.TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305,
+		}
+		varDefaultCipherSuitesTLS13 = []uint16{
+			tls.TLS_AES_128_GCM_SHA256,
+			tls.TLS_CHACHA20_POLY1305_SHA256,
+			tls.TLS_AES_256_GCM_SHA384,
+		}
+	} else {
+		// Without AES-GCM hardware, we put the ChaCha20-Poly1305
+		// cipher suites first.
+		topCipherSuites = []uint16{
+			tls.TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305,
+			tls.TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305,
+			tls.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
+			tls.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
+			tls.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,
+			tls.TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,
+		}
+		varDefaultCipherSuitesTLS13 = []uint16{
+			tls.TLS_CHACHA20_POLY1305_SHA256,
+			tls.TLS_AES_128_GCM_SHA256,
+			tls.TLS_AES_256_GCM_SHA384,
+		}
+	}
+	return topCipherSuites
+}
+
+func shuffleSuites(cipherSuites []uint16, r1 *rand.Rand) []uint16 {
+
+	shuffled := make([]uint16, len(cipherSuites))
+	copy(shuffled, cipherSuites)
+	r1.Shuffle(len(shuffled), func(i, j int) { shuffled[i], shuffled[j] = shuffled[j], shuffled[i] })
+	return shuffled
+}
+
+func FlipWeightedCoin(weight float64, r1 *rand.Rand) bool {
+	if weight > 1.0 {
+		weight = 1.0
+	}
+	f := float64(r1.Int63()) / float64(math.MaxInt64)
+	return f > 1.0-weight
+}
+
+func removeRC4Ciphers(s []uint16) []uint16 {
+	// removes elements in place
+	sliceLen := len(s)
+	for i := 0; i < sliceLen; i++ {
+		cipher := s[i]
+		if cipher == tls.TLS_ECDHE_ECDSA_WITH_RC4_128_SHA ||
+			cipher == tls.TLS_ECDHE_RSA_WITH_RC4_128_SHA ||
+			cipher == tls.TLS_RSA_WITH_RC4_128_SHA {
+			s = append(s[:i], s[i+1:]...)
+			sliceLen--
+			i--
+		}
+	}
+	return s[:sliceLen]
+}
+
+func removeRandomCiphers(r1 *rand.Rand, s []uint16, maxRemovalProbability float64) []uint16 {
+	// removes elements in place
+	// probability to remove increases for further elements
+	// never remove first cipher
+	if len(s) <= 1 {
+		return s
+	}
+
+	// remove random elements
+	floatLen := float64(len(s))
+	sliceLen := len(s)
+	for i := 1; i < sliceLen; i++ {
+		if FlipWeightedCoin(maxRemovalProbability*float64(i)/floatLen, r1) {
+			s = append(s[:i], s[i+1:]...)
+			sliceLen--
+			i--
+		}
+	}
+	return s[:sliceLen]
+}
+
+func makeSupportedVersions(minVers, maxVers uint16) []uint16 {
+	a := make([]uint16, maxVers-minVers+1)
+	for i := range a {
+		a[i] = maxVers - uint16(i)
+	}
+	return a
+}
+
+func specRandom() tls.ClientHelloSpec {
 
 	p := tls.ClientHelloSpec{}
-
-	seed, err := tls.NewPRNGSeed()
-	if err != nil {
-		return p, err
-	}
-	r, err := tls.newPRNGWithSeed(seed)
-	if err != nil {
-		return p, err
-	}
+	s1 := rand.NewSource(time.Now().UnixNano())
+	r1 := rand.New(s1)
 
 	var WithALPN bool
-
-	if r.FlipWeightedCoin(0.7) {
+	if r1.Int()%2 == 0 {
 		WithALPN = true
 	} else {
 		WithALPN = false
 	}
 
-	p.CipherSuites = make([]uint16, len(tls.defaultCipherSuites()))
-	copy(p.CipherSuites, tls.defaultCipherSuites())
-	shuffledSuites, err := tls.shuffledCiphers(r)
-	if err != nil {
-		return p, err
-	}
+	p.CipherSuites = make([]uint16, len(getCipherSuites()))
+	copy(p.CipherSuites, getCipherSuites())
+	shuffledSuites := shuffleSuites(p.CipherSuites, r1)
 
-	if r.FlipWeightedCoin(0.4) {
+	if FlipWeightedCoin(0.4, r1) {
 		p.TLSVersMin = tls.VersionTLS10
 		p.TLSVersMax = tls.VersionTLS13
-		tls13ciphers := make([]uint16, len(tls.defaultCipherSuitesTLS13()))
-		copy(tls13ciphers, tls.defaultCipherSuitesTLS13())
-		r.rand.Shuffle(len(tls13ciphers), func(i, j int) {
+		tls13ciphers := make([]uint16, len(varDefaultCipherSuitesTLS13))
+		copy(tls13ciphers, varDefaultCipherSuitesTLS13)
+		r1.Shuffle(len(tls13ciphers), func(i, j int) {
 			tls13ciphers[i], tls13ciphers[j] = tls13ciphers[j], tls13ciphers[i]
 		})
 		// appending TLS 1.3 ciphers before TLS 1.2, since that's what popular implementations do
 		shuffledSuites = append(tls13ciphers, shuffledSuites...)
 
 		// TLS 1.3 forbids RC4 in any configurations
-		shuffledSuites = tls.removeRC4Ciphers(shuffledSuites)
+		shuffledSuites = removeRC4Ciphers(shuffledSuites)
 	} else {
 		p.TLSVersMin = tls.VersionTLS10
 		p.TLSVersMax = tls.VersionTLS12
 	}
 
-	p.CipherSuites = tls.removeRandomCiphers(r, shuffledSuites, 0.4)
+	p.CipherSuites = removeRandomCiphers(r1, shuffledSuites, 0.4)
 
 	sni := tls.SNIExtension{}
 	sessionTicket := tls.SessionTicketExtension{}
@@ -374,23 +484,23 @@ func specRandom() (tls.ClientHelloSpec, error) {
 		tls.PKCS1WithSHA512,
 	}
 
-	if r.FlipWeightedCoin(0.63) {
+	if FlipWeightedCoin(0.63, r1) {
 		sigAndHashAlgos = append(sigAndHashAlgos, tls.ECDSAWithSHA1)
 	}
-	if r.FlipWeightedCoin(0.59) {
+	if FlipWeightedCoin(0.59, r1) {
 		sigAndHashAlgos = append(sigAndHashAlgos, tls.ECDSAWithP521AndSHA512)
 	}
-	if r.FlipWeightedCoin(0.51) || p.TLSVersMax == tls.VersionTLS13 {
+	if FlipWeightedCoin(0.51, r1) || p.TLSVersMax == tls.VersionTLS13 {
 		// https://tools.ietf.org/html/rfc8446 says "...RSASSA-PSS (which is mandatory in TLS 1.3)..."
 		sigAndHashAlgos = append(sigAndHashAlgos, tls.PSSWithSHA256)
-		if r.FlipWeightedCoin(0.9) {
+		if FlipWeightedCoin(0.9, r1) {
 			// these usually go together
 			sigAndHashAlgos = append(sigAndHashAlgos, tls.PSSWithSHA384)
 			sigAndHashAlgos = append(sigAndHashAlgos, tls.PSSWithSHA512)
 		}
 	}
 
-	r.rand.Shuffle(len(sigAndHashAlgos), func(i, j int) {
+	r1.Shuffle(len(sigAndHashAlgos), func(i, j int) {
 		sigAndHashAlgos[i], sigAndHashAlgos[j] = sigAndHashAlgos[j], sigAndHashAlgos[i]
 	})
 	sigAndHash := tls.SignatureAlgorithmsExtension{SupportedSignatureAlgorithms: sigAndHashAlgos}
@@ -401,11 +511,11 @@ func specRandom() (tls.ClientHelloSpec, error) {
 	points := tls.SupportedPointsExtension{SupportedPoints: []byte{0x00}}
 
 	curveIDs := []tls.CurveID{}
-	if r.FlipWeightedCoin(0.71) || p.TLSVersMax == tls.VersionTLS13 {
+	if FlipWeightedCoin(0.71, r1) || p.TLSVersMax == tls.VersionTLS13 {
 		curveIDs = append(curveIDs, tls.X25519)
 	}
 	curveIDs = append(curveIDs, tls.CurveP256, tls.CurveP384)
-	if r.FlipWeightedCoin(0.46) {
+	if FlipWeightedCoin(0.46, r1) {
 		curveIDs = append(curveIDs, tls.CurveP521)
 	}
 
@@ -427,36 +537,36 @@ func specRandom() (tls.ClientHelloSpec, error) {
 		p.Extensions = append(p.Extensions, &alpn)
 	}
 
-	if r.FlipWeightedCoin(0.62) || p.TLSVersMax == tls.VersionTLS13 {
+	if FlipWeightedCoin(0.62, r1) || p.TLSVersMax == tls.VersionTLS13 {
 		// always include for TLS 1.3, since TLS 1.3 ClientHellos are often over 256 bytes
 		// and that's when padding is required to work around buggy middleboxes
 		p.Extensions = append(p.Extensions, &padding)
 	}
-	if r.FlipWeightedCoin(0.74) {
+	if FlipWeightedCoin(0.74, r1) {
 		p.Extensions = append(p.Extensions, &status)
 	}
-	if r.FlipWeightedCoin(0.46) {
+	if FlipWeightedCoin(0.46, r1) {
 		p.Extensions = append(p.Extensions, &sct)
 	}
-	if r.FlipWeightedCoin(0.75) {
+	if FlipWeightedCoin(0.75, r1) {
 		p.Extensions = append(p.Extensions, &reneg)
 	}
-	if r.FlipWeightedCoin(0.77) {
+	if FlipWeightedCoin(0.7, r1) {
 		p.Extensions = append(p.Extensions, &ems)
 	}
 	if p.TLSVersMax == tls.VersionTLS13 {
 		ks := tls.KeyShareExtension{[]tls.KeyShare{
 			{Group: tls.X25519}, // the key for the group will be generated later
 		}}
-		if r.FlipWeightedCoin(0.25) {
+		if FlipWeightedCoin(0.25, r1) {
 			// do not ADD second keyShare because crypto/tls does not support multiple ecdheParams
 			// TODO: add it back when they implement multiple keyShares, or implement it oursevles
 			// ks.KeyShares = append(ks.KeyShares, KeyShare{Group: CurveP256})
 			ks.KeyShares[0].Group = tls.CurveP256
 		}
-		pskExchangeModes := tls.PSKKeyExchangeModesExtension{[]uint8{tls.pskModeDHE}}
+		pskExchangeModes := tls.PSKKeyExchangeModesExtension{[]uint8{1}}
 		supportedVersionsExt := tls.SupportedVersionsExtension{
-			Versions: tls.makeSupportedVersions(p.TLSVersMin, p.TLSVersMax),
+			Versions: makeSupportedVersions(p.TLSVersMin, p.TLSVersMax),
 		}
 		p.Extensions = append(p.Extensions, &ks, &pskExchangeModes, &supportedVersionsExt)
 
@@ -471,11 +581,13 @@ func specRandom() (tls.ClientHelloSpec, error) {
 			// seed to create a new, independent PRNG, so that a seed used
 			// with the previous version of generateRandomizedSpec will
 			// produce the exact same spec as long as ALPS isn't selected.
-			r, err := tls.newPRNGWithSaltedSeed(seed, "ALPS")
-			if err != nil {
-				return p, err
-			}
-			if r.FlipWeightedCoin(0.33) {
+			/*
+				r, err := tls.newPRNGWithSaltedSeed(seed, "ALPS")
+				if err != nil {
+					return p, err
+				}
+			*/
+			if FlipWeightedCoin(0.33, r1) {
 				// As with the ALPN case above, default to something popular
 				// (unlike ALPN, ALPS can't yet be specified in uconn.config).
 				alps := &tls.ApplicationSettingsExtension{SupportedProtocols: []string{"http/1.1"}}
@@ -486,11 +598,11 @@ func specRandom() (tls.ClientHelloSpec, error) {
 		// TODO: randomly add DelegatedCredentialsExtension, once it is
 		// sufficiently popular.
 	}
-	r.rand.Shuffle(len(p.Extensions), func(i, j int) {
+	r1.Shuffle(len(p.Extensions), func(i, j int) {
 		p.Extensions[i], p.Extensions[j] = p.Extensions[j], p.Extensions[i]
 	})
 
-	return p, nil
+	return p
 }
 
 type Job struct {
@@ -515,10 +627,7 @@ func (j *Job) ClientHelloSpec() (clientHelloSpec tls.ClientHelloSpec) {
 	} else if j.Fprint == "openssl" {
 		clientHelloSpec = specOpenssl()
 	} else if j.Fprint == "random" {
-		clientHelloSpec, err = specRandom()
-		if err != nil {
-			log.Printf("Error while getting random specs\n")
-		}
+		clientHelloSpec = specRandom()
 	} else {
 		log.Fatalf("Error unknown fprint: %s\n", j.Fprint)
 		clientHelloSpec = tls.ClientHelloSpec{} // nil
