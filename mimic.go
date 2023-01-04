@@ -28,6 +28,1540 @@ Options:
 	flag.PrintDefaults()
 }
 
+func specPsiInj() tls.ClientHelloSpec {
+
+	return tls.ClientHelloSpec{
+		CipherSuites: []uint16{
+			tls.TLS_AES_128_GCM_SHA256,
+			tls.TLS_CHACHA20_POLY1305_SHA256,
+			tls.TLS_AES_256_GCM_SHA384,
+			tls.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,
+			tls.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
+			tls.TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305,
+			tls.TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305,
+			tls.TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,
+			tls.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
+			tls.TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA,
+			tls.TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA,
+			tls.TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA,
+			tls.TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA,
+			tls.TLS_RSA_WITH_AES_128_GCM_SHA256,
+			tls.TLS_RSA_WITH_AES_256_GCM_SHA384,
+			tls.TLS_RSA_WITH_AES_128_CBC_SHA,
+			tls.TLS_RSA_WITH_AES_256_CBC_SHA,
+		},
+		CompressionMethods: []byte{
+			0x00, // compressionNone
+		},
+		Extensions: []tls.TLSExtension{
+			&tls.SNIExtension{},
+			&tls.UtlsExtendedMasterSecretExtension{},
+			&tls.RenegotiationInfoExtension{Renegotiation: tls.RenegotiateOnceAsClient},
+			&tls.SupportedCurvesExtension{[]tls.CurveID{
+				tls.X25519,
+				tls.CurveP256,
+				tls.CurveP384,
+				tls.CurveP521,
+				0x0100,
+				0x0101,
+			}},
+			&tls.SupportedPointsExtension{SupportedPoints: []byte{
+				0x00, // pointFormatUncompressed
+			}},
+			&tls.SessionTicketExtension{},
+			&tls.ALPNExtension{AlpnProtocols: []string{"h2", "http/1.1"}},
+			&tls.StatusRequestExtension{},
+			&tls.GenericExtension{Id: 0x0022}, // WARNING: UNKNOWN EXTENSION, USE AT YOUR OWN RISK
+			&tls.KeyShareExtension{[]tls.KeyShare{
+				{Group: tls.X25519},
+				{Group: tls.CurveP256},
+			}},
+			&tls.SupportedVersionsExtension{[]uint16{
+				tls.VersionTLS13,
+				tls.VersionTLS12,
+			}},
+			&tls.SignatureAlgorithmsExtension{SupportedSignatureAlgorithms: []tls.SignatureScheme{
+				tls.ECDSAWithP256AndSHA256,
+				tls.ECDSAWithP384AndSHA384,
+				tls.ECDSAWithP521AndSHA512,
+				tls.PSSWithSHA256,
+				tls.PSSWithSHA384,
+				tls.PSSWithSHA512,
+				tls.PKCS1WithSHA256,
+				tls.PKCS1WithSHA384,
+				tls.PKCS1WithSHA512,
+				tls.ECDSAWithSHA1,
+				tls.PKCS1WithSHA1,
+			}},
+			&tls.PSKKeyExchangeModesExtension{[]uint8{
+				tls.PskModeDHE,
+			}},
+			&tls.FakeRecordSizeLimitExtension{16385},
+
+			&tls.UtlsPaddingExtension{GetPaddingLen: tls.BoringPaddingStyle},
+		},
+	}
+}
+
+// Used by psiphon https://github.com/Psiphon-Labs/psiphon-tunnel-core/blob/f2906e7f19470e0e249d30053333c6a5bf1efcc0/psiphon/tlsDialer.go#L798
+// Firefox-105
+func specFirefox105() tls.ClientHelloSpec {
+	return tls.ClientHelloSpec{
+
+		TLSVersMin: tls.VersionTLS12,
+		TLSVersMax: tls.VersionTLS13,
+		CipherSuites: []uint16{
+			tls.TLS_AES_128_GCM_SHA256,
+			tls.TLS_CHACHA20_POLY1305_SHA256,
+			tls.TLS_AES_256_GCM_SHA384,
+			tls.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,
+			tls.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
+			tls.TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305,
+			tls.TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305,
+			tls.TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,
+			tls.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
+			tls.TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA,
+			tls.TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA,
+			tls.TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA,
+			tls.TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA,
+			tls.TLS_RSA_WITH_AES_128_GCM_SHA256,
+			tls.TLS_RSA_WITH_AES_256_GCM_SHA384,
+			tls.TLS_RSA_WITH_AES_128_CBC_SHA,
+			tls.TLS_RSA_WITH_AES_256_CBC_SHA,
+		},
+		CompressionMethods: []uint8{
+			0x0, // no compression
+		},
+		Extensions: []tls.TLSExtension{
+			&tls.SNIExtension{},
+			&tls.UtlsExtendedMasterSecretExtension{},
+			&tls.RenegotiationInfoExtension{
+				Renegotiation: tls.RenegotiateOnceAsClient,
+			},
+			&tls.SupportedCurvesExtension{
+				Curves: []tls.CurveID{
+					tls.X25519,
+					tls.CurveP256,
+					tls.CurveP384,
+					tls.CurveP521,
+					256,
+					257,
+				},
+			},
+			&tls.SupportedPointsExtension{
+				SupportedPoints: []uint8{
+					0x0, // uncompressed
+				},
+			},
+			&tls.SessionTicketExtension{},
+			&tls.ALPNExtension{
+				AlpnProtocols: []string{
+					"h2",
+					"http/1.1",
+				},
+			},
+			&tls.StatusRequestExtension{},
+			&tls.GenericExtension{ // To match FakeDelegatedCredentialsExtension
+				Id: 0x0022,
+				Data: []byte{
+					/*
+						ECDSAWithP256AndSHA256,
+							ECDSAWithP384AndSHA384,
+							ECDSAWithP521AndSHA512,
+							ECDSAWithSHA1,
+					*/
+					0x00,
+					0x08,
+					0x04,
+					0x03,
+					0x05,
+					0x03,
+					0x06,
+					0x03,
+					0x02,
+					0x03,
+				},
+			},
+			/*
+				&FakeDelegatedCredentialsExtension{
+					SupportedSignatureAlgorithms: []SignatureScheme{
+						ECDSAWithP256AndSHA256,
+						ECDSAWithP384AndSHA384,
+						ECDSAWithP521AndSHA512,
+						ECDSAWithSHA1,
+					},
+				},
+			*/
+			&tls.KeyShareExtension{
+				KeyShares: []tls.KeyShare{
+					{
+						Group: tls.X25519,
+					},
+					{
+						Group: tls.CurveP256,
+					},
+				},
+			},
+			&tls.SupportedVersionsExtension{
+				Versions: []uint16{
+					tls.VersionTLS13,
+					tls.VersionTLS12,
+				},
+			},
+			&tls.SignatureAlgorithmsExtension{
+				SupportedSignatureAlgorithms: []tls.SignatureScheme{
+					tls.ECDSAWithP256AndSHA256,
+					tls.ECDSAWithP384AndSHA384,
+					tls.ECDSAWithP521AndSHA512,
+					tls.PSSWithSHA256,
+					tls.PSSWithSHA384,
+					tls.PSSWithSHA512,
+					tls.PKCS1WithSHA256,
+					tls.PKCS1WithSHA384,
+					tls.PKCS1WithSHA512,
+					tls.ECDSAWithSHA1,
+					tls.PKCS1WithSHA1,
+				},
+			},
+			&tls.PSKKeyExchangeModesExtension{
+				Modes: []uint8{
+					1, // PskModeDHE
+				},
+			},
+			&tls.FakeRecordSizeLimitExtension{
+				Limit: 0x4001,
+			},
+			&tls.UtlsPaddingExtension{
+				GetPaddingLen: tls.BoringPaddingStyle,
+			},
+		},
+	}
+}
+
+// Used by psiphon https://github.com/Psiphon-Labs/psiphon-tunnel-core/blob/f2906e7f19470e0e249d30053333c6a5bf1efcc0/psiphon/tlsDialer.go#L796
+// Firefox-99
+func specFirefox99() tls.ClientHelloSpec {
+	return tls.ClientHelloSpec{
+		TLSVersMin: tls.VersionTLS10,
+		TLSVersMax: tls.VersionTLS13,
+		CipherSuites: []uint16{
+			tls.TLS_AES_128_GCM_SHA256,
+			tls.TLS_CHACHA20_POLY1305_SHA256,
+			tls.TLS_AES_256_GCM_SHA384,
+			tls.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,
+			tls.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
+			tls.TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305,
+			tls.TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305,
+			tls.TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,
+			tls.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
+			tls.TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA,
+			tls.TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA,
+			tls.TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA,
+			tls.TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA,
+			tls.TLS_RSA_WITH_AES_128_GCM_SHA256,
+			tls.TLS_RSA_WITH_AES_256_GCM_SHA384,
+			tls.TLS_RSA_WITH_AES_128_CBC_SHA,
+			tls.TLS_RSA_WITH_AES_256_CBC_SHA,
+			tls.TLS_RSA_WITH_3DES_EDE_CBC_SHA,
+		},
+		CompressionMethods: []byte{
+			0x00, // compressionNone
+		},
+		Extensions: []tls.TLSExtension{
+			&tls.SNIExtension{},                      //server_name
+			&tls.UtlsExtendedMasterSecretExtension{}, //extended_master_secret
+			&tls.RenegotiationInfoExtension{Renegotiation: tls.RenegotiateOnceAsClient}, //extensionRenegotiationInfo
+			&tls.SupportedCurvesExtension{[]tls.CurveID{ //supported_groups
+				tls.X25519,
+				tls.CurveP256,
+				tls.CurveP384,
+				tls.CurveP521,
+				tls.CurveID(tls.FakeFFDHE2048),
+				tls.CurveID(tls.FakeFFDHE3072),
+			}},
+			&tls.SupportedPointsExtension{SupportedPoints: []byte{ //ec_point_formats
+				0x00, // pointFormatUncompressed
+			}},
+			&tls.SessionTicketExtension{},
+			&tls.ALPNExtension{AlpnProtocols: []string{"h2", "http/1.1"}}, //application_layer_protocol_negotiation
+			&tls.StatusRequestExtension{},
+			&tls.DelegatedCredentialsExtension{
+				AlgorithmsSignature: []tls.SignatureScheme{ //signature_algorithms
+					tls.ECDSAWithP256AndSHA256,
+					tls.ECDSAWithP384AndSHA384,
+					tls.ECDSAWithP521AndSHA512,
+					tls.ECDSAWithSHA1,
+				},
+			},
+			&tls.KeyShareExtension{[]tls.KeyShare{
+				{Group: tls.X25519},
+				{Group: tls.CurveP256}, //key_share
+			}},
+			&tls.SupportedVersionsExtension{[]uint16{
+				tls.VersionTLS13, //supported_versions
+				tls.VersionTLS12,
+				tls.VersionTLS11,
+				tls.VersionTLS10,
+			}},
+			&tls.SignatureAlgorithmsExtension{SupportedSignatureAlgorithms: []tls.SignatureScheme{ //signature_algorithms
+				tls.ECDSAWithP256AndSHA256,
+				tls.ECDSAWithP384AndSHA384,
+				tls.ECDSAWithP521AndSHA512,
+				tls.PSSWithSHA256,
+				tls.PSSWithSHA384,
+				tls.PSSWithSHA512,
+				tls.PKCS1WithSHA256,
+				tls.PKCS1WithSHA384,
+				tls.PKCS1WithSHA512,
+				tls.ECDSAWithSHA1,
+				tls.PKCS1WithSHA1,
+			}},
+			&tls.PSKKeyExchangeModesExtension{[]uint8{ //psk_key_exchange_modes
+				1, // PskModeDHE
+			}},
+			&tls.FakeRecordSizeLimitExtension{Limit: 0x4001},                 //record_size_limit
+			&tls.UtlsPaddingExtension{GetPaddingLen: tls.BoringPaddingStyle}, //padding
+		},
+	}
+}
+
+// Used by psiphon https://github.com/Psiphon-Labs/psiphon-tunnel-core/blob/f2906e7f19470e0e249d30053333c6a5bf1efcc0/psiphon/tlsDialer.go#L794
+// Firefox-65 and 63
+func specFirefox65() tls.ClientHelloSpec {
+	return tls.ClientHelloSpec{
+
+		TLSVersMin: tls.VersionTLS10,
+		TLSVersMax: tls.VersionTLS13,
+		CipherSuites: []uint16{
+			tls.TLS_AES_128_GCM_SHA256,
+			tls.TLS_CHACHA20_POLY1305_SHA256,
+			tls.TLS_AES_256_GCM_SHA384,
+			tls.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,
+			tls.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
+			tls.TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305,
+			tls.TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305,
+			tls.TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,
+			tls.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
+			tls.TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA,
+			tls.TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA,
+			tls.TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA,
+			tls.TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA,
+			tls.FAKE_TLS_DHE_RSA_WITH_AES_128_CBC_SHA,
+			tls.FAKE_TLS_DHE_RSA_WITH_AES_256_CBC_SHA,
+			tls.TLS_RSA_WITH_AES_128_CBC_SHA,
+			tls.TLS_RSA_WITH_AES_256_CBC_SHA,
+			tls.TLS_RSA_WITH_3DES_EDE_CBC_SHA,
+		},
+		CompressionMethods: []byte{
+			0x00, // compressionNone
+		},
+		Extensions: []tls.TLSExtension{
+			&tls.SNIExtension{},
+			&tls.UtlsExtendedMasterSecretExtension{},
+			&tls.RenegotiationInfoExtension{Renegotiation: tls.RenegotiateOnceAsClient},
+			&tls.SupportedCurvesExtension{[]tls.CurveID{
+				tls.X25519,
+				tls.CurveP256,
+				tls.CurveP384,
+				tls.CurveP521,
+				tls.CurveID(tls.FakeFFDHE2048),
+				tls.CurveID(tls.FakeFFDHE3072),
+			}},
+			&tls.SupportedPointsExtension{SupportedPoints: []byte{
+				0x00, // pointFormatUncompressed
+			}},
+			&tls.SessionTicketExtension{},
+			&tls.ALPNExtension{AlpnProtocols: []string{"h2", "http/1.1"}},
+			&tls.StatusRequestExtension{},
+			&tls.KeyShareExtension{[]tls.KeyShare{
+				{Group: tls.X25519},
+				{Group: tls.CurveP256},
+			}},
+			&tls.SupportedVersionsExtension{[]uint16{
+				tls.VersionTLS13,
+				tls.VersionTLS12,
+				tls.VersionTLS11,
+				tls.VersionTLS10}},
+			&tls.SignatureAlgorithmsExtension{SupportedSignatureAlgorithms: []tls.SignatureScheme{
+				tls.ECDSAWithP256AndSHA256,
+				tls.ECDSAWithP384AndSHA384,
+				tls.ECDSAWithP521AndSHA512,
+				tls.PSSWithSHA256,
+				tls.PSSWithSHA384,
+				tls.PSSWithSHA512,
+				tls.PKCS1WithSHA256,
+				tls.PKCS1WithSHA384,
+				tls.PKCS1WithSHA512,
+				tls.ECDSAWithSHA1,
+				tls.PKCS1WithSHA1,
+			}},
+			&tls.PSKKeyExchangeModesExtension{[]uint8{1}}, // pskModeDHE
+			&tls.FakeRecordSizeLimitExtension{0x4001},
+			&tls.UtlsPaddingExtension{GetPaddingLen: tls.BoringPaddingStyle},
+		},
+	}
+}
+
+// Used by psiphon https://github.com/Psiphon-Labs/psiphon-tunnel-core/blob/f2906e7f19470e0e249d30053333c6a5bf1efcc0/psiphon/tlsDialer.go#L790
+// Firefox-55
+func specFirefox55_and_56() tls.ClientHelloSpec {
+	return tls.ClientHelloSpec{
+		TLSVersMax: tls.VersionTLS12,
+		TLSVersMin: tls.VersionTLS10,
+		CipherSuites: []uint16{
+			tls.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,
+			tls.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
+			tls.TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305,
+			tls.TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305,
+			tls.TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,
+			tls.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
+			tls.TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA,
+			tls.TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA,
+			tls.TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA,
+			tls.TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA,
+			tls.FAKE_TLS_DHE_RSA_WITH_AES_128_CBC_SHA,
+			tls.FAKE_TLS_DHE_RSA_WITH_AES_256_CBC_SHA,
+			tls.TLS_RSA_WITH_AES_128_CBC_SHA,
+			tls.TLS_RSA_WITH_AES_256_CBC_SHA,
+			tls.TLS_RSA_WITH_3DES_EDE_CBC_SHA,
+		},
+		CompressionMethods: []byte{0x00}, // compressionNone
+
+		Extensions: []tls.TLSExtension{
+			&tls.SNIExtension{},
+			&tls.UtlsExtendedMasterSecretExtension{},
+			&tls.RenegotiationInfoExtension{Renegotiation: tls.RenegotiateOnceAsClient},
+			&tls.SupportedCurvesExtension{[]tls.CurveID{tls.X25519, tls.CurveP256, tls.CurveP384, tls.CurveP521}},
+			&tls.SupportedPointsExtension{SupportedPoints: []byte{0x00}}, // pointFormatUncompressed
+
+			&tls.SessionTicketExtension{},
+			&tls.ALPNExtension{AlpnProtocols: []string{"h2", "http/1.1"}},
+			&tls.StatusRequestExtension{},
+			&tls.SignatureAlgorithmsExtension{SupportedSignatureAlgorithms: []tls.SignatureScheme{
+				tls.ECDSAWithP256AndSHA256,
+				tls.ECDSAWithP384AndSHA384,
+				tls.ECDSAWithP521AndSHA512,
+				tls.PSSWithSHA256,
+				tls.PSSWithSHA384,
+				tls.PSSWithSHA512,
+				tls.PKCS1WithSHA256,
+				tls.PKCS1WithSHA384,
+				tls.PKCS1WithSHA512,
+				tls.ECDSAWithSHA1,
+				tls.PKCS1WithSHA1},
+			},
+			&tls.UtlsPaddingExtension{GetPaddingLen: tls.BoringPaddingStyle},
+		},
+		GetSessionID: nil,
+	}
+}
+
+// Used by psiphon https://github.com/Psiphon-Labs/psiphon-tunnel-core/blob/f2906e7f19470e0e249d30053333c6a5bf1efcc0/psiphon/tlsDialer.go#L788
+// Chrome-102
+func specChrome102() tls.ClientHelloSpec {
+	return tls.ClientHelloSpec{
+		CipherSuites: []uint16{
+			tls.GREASE_PLACEHOLDER,
+			tls.TLS_AES_128_GCM_SHA256,
+			tls.TLS_AES_256_GCM_SHA384,
+			tls.TLS_CHACHA20_POLY1305_SHA256,
+			tls.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,
+			tls.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
+			tls.TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,
+			tls.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
+			tls.TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305,
+			tls.TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305,
+			tls.TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA,
+			tls.TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA,
+			tls.TLS_RSA_WITH_AES_128_GCM_SHA256,
+			tls.TLS_RSA_WITH_AES_256_GCM_SHA384,
+			tls.TLS_RSA_WITH_AES_128_CBC_SHA,
+			tls.TLS_RSA_WITH_AES_256_CBC_SHA,
+		},
+		CompressionMethods: []byte{
+			0x00, // compressionNone
+		},
+		Extensions: []tls.TLSExtension{
+			&tls.UtlsGREASEExtension{},
+			&tls.SNIExtension{},
+			&tls.UtlsExtendedMasterSecretExtension{},
+			&tls.RenegotiationInfoExtension{Renegotiation: tls.RenegotiateOnceAsClient},
+			&tls.SupportedCurvesExtension{[]tls.CurveID{
+				tls.GREASE_PLACEHOLDER,
+				tls.X25519,
+				tls.CurveP256,
+				tls.CurveP384,
+			}},
+			&tls.SupportedPointsExtension{SupportedPoints: []byte{
+				0x00, // pointFormatUncompressed
+			}},
+			&tls.SessionTicketExtension{},
+			&tls.ALPNExtension{AlpnProtocols: []string{"h2", "http/1.1"}},
+			&tls.StatusRequestExtension{},
+			&tls.SignatureAlgorithmsExtension{SupportedSignatureAlgorithms: []tls.SignatureScheme{
+				tls.ECDSAWithP256AndSHA256,
+				tls.PSSWithSHA256,
+				tls.PKCS1WithSHA256,
+				tls.ECDSAWithP384AndSHA384,
+				tls.PSSWithSHA384,
+				tls.PKCS1WithSHA384,
+				tls.PSSWithSHA512,
+				tls.PKCS1WithSHA512,
+			}},
+			&tls.SCTExtension{},
+			&tls.KeyShareExtension{[]tls.KeyShare{
+				{Group: tls.CurveID(tls.GREASE_PLACEHOLDER), Data: []byte{0}},
+				{Group: tls.X25519},
+			}},
+			&tls.PSKKeyExchangeModesExtension{[]uint8{
+				1, // PskModeDHE
+			}},
+			&tls.SupportedVersionsExtension{[]uint16{
+				tls.GREASE_PLACEHOLDER,
+				tls.VersionTLS13,
+				tls.VersionTLS12,
+			}},
+			&tls.UtlsCompressCertExtension{[]tls.CertCompressionAlgo{
+				tls.CertCompressionBrotli,
+			}},
+			&tls.ApplicationSettingsExtension{SupportedProtocols: []string{"h2"}},
+			&tls.UtlsGREASEExtension{},
+			&tls.UtlsPaddingExtension{GetPaddingLen: tls.BoringPaddingStyle},
+		},
+	}
+}
+
+// Used by psiphon https://github.com/Psiphon-Labs/psiphon-tunnel-core/blob/f2906e7f19470e0e249d30053333c6a5bf1efcc0/psiphon/tlsDialer.go#L786
+// Chrome-96
+func specChrome96() tls.ClientHelloSpec {
+	return tls.ClientHelloSpec{
+		CipherSuites: []uint16{
+			tls.GREASE_PLACEHOLDER,
+			tls.TLS_AES_128_GCM_SHA256,
+			tls.TLS_AES_256_GCM_SHA384,
+			tls.TLS_CHACHA20_POLY1305_SHA256,
+			tls.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,
+			tls.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
+			tls.TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,
+			tls.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
+			tls.TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305,
+			tls.TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305,
+			tls.TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA,
+			tls.TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA,
+			tls.TLS_RSA_WITH_AES_128_GCM_SHA256,
+			tls.TLS_RSA_WITH_AES_256_GCM_SHA384,
+			tls.TLS_RSA_WITH_AES_128_CBC_SHA,
+			tls.TLS_RSA_WITH_AES_256_CBC_SHA,
+		},
+		CompressionMethods: []byte{
+			0x00, // compressionNone
+		},
+		Extensions: []tls.TLSExtension{
+			&tls.UtlsGREASEExtension{},
+			&tls.SNIExtension{},
+			&tls.UtlsExtendedMasterSecretExtension{},
+			&tls.RenegotiationInfoExtension{Renegotiation: tls.RenegotiateOnceAsClient},
+			&tls.SupportedCurvesExtension{[]tls.CurveID{
+				tls.CurveID(tls.GREASE_PLACEHOLDER),
+				tls.X25519,
+				tls.CurveP256,
+				tls.CurveP384,
+			}},
+			&tls.SupportedPointsExtension{SupportedPoints: []byte{
+				0x00, // pointFormatUncompressed
+			}},
+			&tls.SessionTicketExtension{},
+			&tls.ALPNExtension{AlpnProtocols: []string{"h2", "http/1.1"}},
+			&tls.StatusRequestExtension{},
+			&tls.SignatureAlgorithmsExtension{SupportedSignatureAlgorithms: []tls.SignatureScheme{
+				tls.ECDSAWithP256AndSHA256,
+				tls.PSSWithSHA256,
+				tls.PKCS1WithSHA256,
+				tls.ECDSAWithP384AndSHA384,
+				tls.PSSWithSHA384,
+				tls.PKCS1WithSHA384,
+				tls.PSSWithSHA512,
+				tls.PKCS1WithSHA512,
+			}},
+			&tls.SCTExtension{},
+			&tls.KeyShareExtension{[]tls.KeyShare{
+				{Group: tls.CurveID(tls.GREASE_PLACEHOLDER), Data: []byte{0}},
+				{Group: tls.X25519},
+			}},
+			&tls.PSKKeyExchangeModesExtension{[]uint8{
+				1, //pskModeDHE
+			}},
+			&tls.SupportedVersionsExtension{[]uint16{
+				tls.GREASE_PLACEHOLDER,
+				tls.VersionTLS13,
+				tls.VersionTLS12,
+				tls.VersionTLS11,
+				tls.VersionTLS10,
+			}},
+			&tls.UtlsCompressCertExtension{[]tls.CertCompressionAlgo{
+				tls.CertCompressionBrotli,
+			}},
+			&tls.ApplicationSettingsExtension{SupportedProtocols: []string{"h2"}},
+			&tls.UtlsGREASEExtension{},
+			&tls.UtlsPaddingExtension{GetPaddingLen: tls.BoringPaddingStyle},
+		},
+	}
+}
+
+// Used by psiphon https://github.com/Psiphon-Labs/psiphon-tunnel-core/blob/f2906e7f19470e0e249d30053333c6a5bf1efcc0/psiphon/tlsDialer.go#L784
+// Chrome-83
+func specChrome83() tls.ClientHelloSpec {
+	return tls.ClientHelloSpec{
+		CipherSuites: []uint16{
+			tls.GREASE_PLACEHOLDER,
+			tls.TLS_AES_128_GCM_SHA256,
+			tls.TLS_AES_256_GCM_SHA384,
+			tls.TLS_CHACHA20_POLY1305_SHA256,
+			tls.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,
+			tls.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
+			tls.TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,
+			tls.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
+			tls.TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305,
+			tls.TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305,
+			tls.TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA,
+			tls.TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA,
+			tls.TLS_RSA_WITH_AES_128_GCM_SHA256,
+			tls.TLS_RSA_WITH_AES_256_GCM_SHA384,
+			tls.TLS_RSA_WITH_AES_128_CBC_SHA,
+			tls.TLS_RSA_WITH_AES_256_CBC_SHA,
+		},
+		CompressionMethods: []byte{
+			0x00, // compressionNone
+		},
+		Extensions: []tls.TLSExtension{
+			&tls.UtlsGREASEExtension{},
+			&tls.SNIExtension{},
+			&tls.UtlsExtendedMasterSecretExtension{},
+			&tls.RenegotiationInfoExtension{Renegotiation: tls.RenegotiateOnceAsClient},
+			&tls.SupportedCurvesExtension{[]tls.CurveID{
+				tls.CurveID(tls.GREASE_PLACEHOLDER),
+				tls.X25519,
+				tls.CurveP256,
+				tls.CurveP384,
+			}},
+			&tls.SupportedPointsExtension{SupportedPoints: []byte{
+				0x00, // pointFormatUncompressed
+			}},
+			&tls.SessionTicketExtension{},
+			&tls.ALPNExtension{AlpnProtocols: []string{"h2", "http/1.1"}},
+			&tls.StatusRequestExtension{},
+			&tls.SignatureAlgorithmsExtension{SupportedSignatureAlgorithms: []tls.SignatureScheme{
+				tls.ECDSAWithP256AndSHA256,
+				tls.PSSWithSHA256,
+				tls.PKCS1WithSHA256,
+				tls.ECDSAWithP384AndSHA384,
+				tls.PSSWithSHA384,
+				tls.PKCS1WithSHA384,
+				tls.PSSWithSHA512,
+				tls.PKCS1WithSHA512,
+			}},
+			&tls.SCTExtension{},
+			&tls.KeyShareExtension{[]tls.KeyShare{
+				{Group: tls.CurveID(tls.GREASE_PLACEHOLDER), Data: []byte{0}},
+				{Group: tls.X25519},
+			}},
+			&tls.PSKKeyExchangeModesExtension{[]uint8{
+				1, // pskModeDHE
+			}},
+			&tls.SupportedVersionsExtension{[]uint16{
+				tls.GREASE_PLACEHOLDER,
+				tls.VersionTLS13,
+				tls.VersionTLS12,
+				tls.VersionTLS11,
+				tls.VersionTLS10,
+			}},
+			&tls.UtlsCompressCertExtension{[]tls.CertCompressionAlgo{
+				tls.CertCompressionBrotli,
+			}},
+			&tls.UtlsGREASEExtension{},
+			&tls.UtlsPaddingExtension{GetPaddingLen: tls.BoringPaddingStyle},
+		},
+	}
+}
+
+// Used by psiphon https://github.com/Psiphon-Labs/psiphon-tunnel-core/blob/f2906e7f19470e0e249d30053333c6a5bf1efcc0/psiphon/tlsDialer.go#L781
+// Chrome-72
+func specChrome72() tls.ClientHelloSpec {
+	return tls.ClientHelloSpec{
+
+		CipherSuites: []uint16{
+			tls.GREASE_PLACEHOLDER,
+			tls.TLS_AES_128_GCM_SHA256,
+			tls.TLS_AES_256_GCM_SHA384,
+			tls.TLS_CHACHA20_POLY1305_SHA256,
+			tls.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,
+			tls.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
+			tls.TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,
+			tls.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
+			tls.TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305,
+			tls.TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305,
+			tls.TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA,
+			tls.TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA,
+			tls.TLS_RSA_WITH_AES_128_GCM_SHA256,
+			tls.TLS_RSA_WITH_AES_256_GCM_SHA384,
+			tls.TLS_RSA_WITH_AES_128_CBC_SHA,
+			tls.TLS_RSA_WITH_AES_256_CBC_SHA,
+			tls.TLS_RSA_WITH_3DES_EDE_CBC_SHA,
+		},
+		CompressionMethods: []byte{
+			0x00, // compressionNone
+		},
+		Extensions: []tls.TLSExtension{
+			&tls.UtlsGREASEExtension{},
+			&tls.SNIExtension{},
+			&tls.UtlsExtendedMasterSecretExtension{},
+			&tls.RenegotiationInfoExtension{Renegotiation: tls.RenegotiateOnceAsClient},
+			&tls.SupportedCurvesExtension{[]tls.CurveID{
+				tls.CurveID(tls.GREASE_PLACEHOLDER),
+				tls.X25519,
+				tls.CurveP256,
+				tls.CurveP384,
+			}},
+			&tls.SupportedPointsExtension{SupportedPoints: []byte{
+				0x00, // pointFormatUncompressed
+			}},
+			&tls.SessionTicketExtension{},
+			&tls.ALPNExtension{AlpnProtocols: []string{"h2", "http/1.1"}},
+			&tls.StatusRequestExtension{},
+			&tls.SignatureAlgorithmsExtension{SupportedSignatureAlgorithms: []tls.SignatureScheme{
+				tls.ECDSAWithP256AndSHA256,
+				tls.PSSWithSHA256,
+				tls.PKCS1WithSHA256,
+				tls.ECDSAWithP384AndSHA384,
+				tls.PSSWithSHA384,
+				tls.PKCS1WithSHA384,
+				tls.PSSWithSHA512,
+				tls.PKCS1WithSHA512,
+				tls.PKCS1WithSHA1,
+			}},
+			&tls.SCTExtension{},
+			&tls.KeyShareExtension{[]tls.KeyShare{
+				{Group: tls.CurveID(tls.GREASE_PLACEHOLDER), Data: []byte{0}},
+				{Group: tls.X25519},
+			}},
+			&tls.PSKKeyExchangeModesExtension{[]uint8{
+				tls.PskModeDHE,
+			}},
+			&tls.SupportedVersionsExtension{[]uint16{
+				tls.GREASE_PLACEHOLDER,
+				tls.VersionTLS13,
+				tls.VersionTLS12,
+				tls.VersionTLS11,
+				tls.VersionTLS10,
+			}},
+			&tls.UtlsCompressCertExtension{[]tls.CertCompressionAlgo{
+				tls.CertCompressionBrotli,
+			}},
+			&tls.UtlsGREASEExtension{},
+			&tls.UtlsPaddingExtension{GetPaddingLen: tls.BoringPaddingStyle},
+		},
+	}
+}
+
+// Used by psiphon https://github.com/Psiphon-Labs/psiphon-tunnel-core/blob/f2906e7f19470e0e249d30053333c6a5bf1efcc0/psiphon/tlsDialer.go#L780
+// Chrome-70
+func specChrome70() tls.ClientHelloSpec {
+	return tls.ClientHelloSpec{
+		TLSVersMin: tls.VersionTLS10,
+		TLSVersMax: tls.VersionTLS13,
+		CipherSuites: []uint16{
+			tls.GREASE_PLACEHOLDER,
+			tls.TLS_AES_128_GCM_SHA256,
+			tls.TLS_AES_256_GCM_SHA384,
+			tls.TLS_CHACHA20_POLY1305_SHA256,
+			tls.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,
+			tls.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
+			tls.TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,
+			tls.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
+			tls.TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305,
+			tls.TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305,
+			tls.TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA,
+			tls.TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA,
+			tls.TLS_RSA_WITH_AES_128_GCM_SHA256,
+			tls.TLS_RSA_WITH_AES_256_GCM_SHA384,
+			tls.TLS_RSA_WITH_AES_128_CBC_SHA,
+			tls.TLS_RSA_WITH_AES_256_CBC_SHA,
+			tls.TLS_RSA_WITH_3DES_EDE_CBC_SHA,
+		},
+		CompressionMethods: []byte{
+			0x00, //compressionNone
+		},
+		Extensions: []tls.TLSExtension{
+			&tls.UtlsGREASEExtension{},
+			&tls.RenegotiationInfoExtension{Renegotiation: tls.RenegotiateOnceAsClient},
+			&tls.SNIExtension{},
+			&tls.UtlsExtendedMasterSecretExtension{},
+			&tls.SessionTicketExtension{},
+			&tls.SignatureAlgorithmsExtension{SupportedSignatureAlgorithms: []tls.SignatureScheme{
+				tls.ECDSAWithP256AndSHA256,
+				tls.PSSWithSHA256,
+				tls.PKCS1WithSHA256,
+				tls.ECDSAWithP384AndSHA384,
+				tls.PSSWithSHA384,
+				tls.PKCS1WithSHA384,
+				tls.PSSWithSHA512,
+				tls.PKCS1WithSHA512,
+				tls.PKCS1WithSHA1,
+			}},
+			&tls.StatusRequestExtension{},
+			&tls.SCTExtension{},
+			&tls.ALPNExtension{AlpnProtocols: []string{"h2", "http/1.1"}},
+			&tls.FakeChannelIDExtension{},
+			&tls.SupportedPointsExtension{SupportedPoints: []byte{
+				0x00, // pointFormatUncompressed
+			}},
+			&tls.KeyShareExtension{[]tls.KeyShare{
+				{Group: tls.CurveID(tls.GREASE_PLACEHOLDER), Data: []byte{0}},
+				{Group: tls.X25519},
+			}},
+			&tls.PSKKeyExchangeModesExtension{[]uint8{1}}, // pskModeDHE
+			&tls.SupportedVersionsExtension{[]uint16{
+				tls.GREASE_PLACEHOLDER,
+				tls.VersionTLS13,
+				tls.VersionTLS12,
+				tls.VersionTLS11,
+				tls.VersionTLS10}},
+			&tls.SupportedCurvesExtension{[]tls.CurveID{
+				tls.CurveID(tls.GREASE_PLACEHOLDER),
+				tls.X25519,
+				tls.CurveP256,
+				tls.CurveP384,
+			}},
+			&tls.UtlsCompressCertExtension{[]tls.CertCompressionAlgo{tls.CertCompressionBrotli}},
+			&tls.UtlsGREASEExtension{},
+			&tls.UtlsPaddingExtension{GetPaddingLen: tls.BoringPaddingStyle},
+		},
+	}
+}
+
+// Used by psiphon https://github.com/Psiphon-Labs/psiphon-tunnel-core/blob/f2906e7f19470e0e249d30053333c6a5bf1efcc0/psiphon/tlsDialer.go#L775
+// Chrome-58
+func specChrome58() tls.ClientHelloSpec {
+	return tls.ClientHelloSpec{
+
+		TLSVersMax: tls.VersionTLS12,
+		TLSVersMin: tls.VersionTLS10,
+		CipherSuites: []uint16{
+			tls.GREASE_PLACEHOLDER,
+			tls.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,
+			tls.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
+			tls.TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,
+			tls.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
+			tls.TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305,
+			tls.TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305,
+			tls.TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA,
+			tls.TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA,
+			tls.TLS_RSA_WITH_AES_128_GCM_SHA256,
+			tls.TLS_RSA_WITH_AES_256_GCM_SHA384,
+			tls.TLS_RSA_WITH_AES_128_CBC_SHA,
+			tls.TLS_RSA_WITH_AES_256_CBC_SHA,
+			tls.TLS_RSA_WITH_3DES_EDE_CBC_SHA,
+		},
+		CompressionMethods: []byte{0x00}, // compressionNone
+
+		Extensions: []tls.TLSExtension{
+			&tls.UtlsGREASEExtension{},
+			&tls.RenegotiationInfoExtension{Renegotiation: tls.RenegotiateOnceAsClient},
+			&tls.SNIExtension{},
+			&tls.UtlsExtendedMasterSecretExtension{},
+			&tls.SessionTicketExtension{},
+			&tls.SignatureAlgorithmsExtension{SupportedSignatureAlgorithms: []tls.SignatureScheme{
+				tls.ECDSAWithP256AndSHA256,
+				tls.PSSWithSHA256,
+				tls.PKCS1WithSHA256,
+				tls.ECDSAWithP384AndSHA384,
+				tls.PSSWithSHA384,
+				tls.PKCS1WithSHA384,
+				tls.PSSWithSHA512,
+				tls.PKCS1WithSHA512,
+				tls.PKCS1WithSHA1},
+			},
+			&tls.StatusRequestExtension{},
+			&tls.SCTExtension{},
+			&tls.ALPNExtension{AlpnProtocols: []string{"h2", "http/1.1"}},
+			&tls.FakeChannelIDExtension{},
+			&tls.SupportedPointsExtension{SupportedPoints: []byte{0x00}}, // pointFormatUncompressed
+			&tls.SupportedCurvesExtension{[]tls.CurveID{tls.CurveID(tls.GREASE_PLACEHOLDER),
+				tls.X25519, tls.CurveP256, tls.CurveP384}},
+			&tls.UtlsGREASEExtension{},
+			&tls.UtlsPaddingExtension{GetPaddingLen: tls.BoringPaddingStyle},
+		},
+		GetSessionID: sha256.Sum256,
+	}
+}
+
+// Used by psiphon https://github.com/Psiphon-Labs/psiphon-tunnel-core/blob/f2906e7f19470e0e249d30053333c6a5bf1efcc0/psiphon/tlsDialer.go#L773
+// iOS 14
+func specIOS14() tls.ClientHelloSpec {
+
+	return tls.ClientHelloSpec{
+		// TLSVersMax: tls.VersionTLS12,
+		// TLSVersMin: VersionTLS10,
+		CipherSuites: []uint16{
+			tls.GREASE_PLACEHOLDER,
+			tls.TLS_AES_128_GCM_SHA256,
+			tls.TLS_AES_256_GCM_SHA384,
+			tls.TLS_CHACHA20_POLY1305_SHA256,
+			tls.TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,
+			tls.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,
+			tls.TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305,
+			tls.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
+			tls.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
+			tls.TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305,
+			tls.DISABLED_TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA384,
+			tls.TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256,
+			tls.TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA,
+			tls.TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA,
+			tls.DISABLED_TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA384,
+			tls.TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256,
+			tls.TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA,
+			tls.TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA,
+			tls.TLS_RSA_WITH_AES_256_GCM_SHA384,
+			tls.TLS_RSA_WITH_AES_128_GCM_SHA256,
+			tls.DISABLED_TLS_RSA_WITH_AES_256_CBC_SHA256,
+			tls.TLS_RSA_WITH_AES_128_CBC_SHA256,
+			tls.TLS_RSA_WITH_AES_256_CBC_SHA,
+			tls.TLS_RSA_WITH_AES_128_CBC_SHA,
+			0xc008,
+			tls.TLS_ECDHE_RSA_WITH_3DES_EDE_CBC_SHA,
+			tls.TLS_RSA_WITH_3DES_EDE_CBC_SHA,
+		},
+		CompressionMethods: []byte{
+			0x00, // compressionNone
+		},
+		Extensions: []tls.TLSExtension{
+			&tls.UtlsGREASEExtension{},
+			&tls.SNIExtension{},
+			&tls.UtlsExtendedMasterSecretExtension{},
+			&tls.RenegotiationInfoExtension{Renegotiation: tls.RenegotiateOnceAsClient},
+			&tls.SupportedCurvesExtension{[]tls.CurveID{
+				tls.CurveID(tls.GREASE_PLACEHOLDER),
+				tls.X25519,
+				tls.CurveP256,
+				tls.CurveP384,
+				tls.CurveP521,
+			}},
+			&tls.SupportedPointsExtension{SupportedPoints: []byte{
+				0x00, // pointFormatUncompressed
+			}},
+			&tls.ALPNExtension{AlpnProtocols: []string{"h2", "http/1.1"}},
+			&tls.StatusRequestExtension{},
+			&tls.SignatureAlgorithmsExtension{SupportedSignatureAlgorithms: []tls.SignatureScheme{
+				tls.ECDSAWithP256AndSHA256,
+				tls.PSSWithSHA256,
+				tls.PKCS1WithSHA256,
+				tls.ECDSAWithP384AndSHA384,
+				tls.ECDSAWithSHA1,
+				tls.PSSWithSHA384,
+				tls.PSSWithSHA384,
+				tls.PKCS1WithSHA384,
+				tls.PSSWithSHA512,
+				tls.PKCS1WithSHA512,
+				tls.PKCS1WithSHA1,
+			}},
+			&tls.SCTExtension{},
+			&tls.KeyShareExtension{[]tls.KeyShare{
+				{Group: tls.CurveID(tls.GREASE_PLACEHOLDER), Data: []byte{0}},
+				{Group: tls.X25519},
+			}},
+			&tls.PSKKeyExchangeModesExtension{[]uint8{
+				tls.PskModeDHE,
+			}},
+			&tls.SupportedVersionsExtension{[]uint16{
+				tls.GREASE_PLACEHOLDER,
+				tls.VersionTLS13,
+				tls.VersionTLS12,
+				tls.VersionTLS11,
+				tls.VersionTLS10,
+			}},
+			&tls.UtlsGREASEExtension{},
+			&tls.UtlsPaddingExtension{GetPaddingLen: tls.BoringPaddingStyle},
+		},
+	}
+}
+
+// Used by psiphon https://github.com/Psiphon-Labs/psiphon-tunnel-core/blob/f2906e7f19470e0e249d30053333c6a5bf1efcc0/psiphon/tlsDialer.go#L772
+// iOS 13
+func specIOS13() tls.ClientHelloSpec {
+	return tls.ClientHelloSpec{
+
+		CipherSuites: []uint16{
+			tls.TLS_AES_128_GCM_SHA256,
+			tls.TLS_AES_256_GCM_SHA384,
+			tls.TLS_CHACHA20_POLY1305_SHA256,
+			tls.TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,
+			tls.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,
+			tls.DISABLED_TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA384,
+			tls.TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256,
+			tls.TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA,
+			tls.TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA,
+			tls.TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305,
+			tls.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
+			tls.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
+			tls.DISABLED_TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA384,
+			tls.TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256,
+			tls.TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA,
+			tls.TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA,
+			tls.TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305,
+			tls.TLS_RSA_WITH_AES_256_GCM_SHA384,
+			tls.TLS_RSA_WITH_AES_128_GCM_SHA256,
+			tls.DISABLED_TLS_RSA_WITH_AES_256_CBC_SHA256,
+			tls.TLS_RSA_WITH_AES_128_CBC_SHA256,
+			tls.TLS_RSA_WITH_AES_256_CBC_SHA,
+			tls.TLS_RSA_WITH_AES_128_CBC_SHA,
+			0xc008,
+			tls.TLS_ECDHE_RSA_WITH_3DES_EDE_CBC_SHA,
+			tls.TLS_RSA_WITH_3DES_EDE_CBC_SHA,
+		},
+		CompressionMethods: []byte{
+			0x00, // compressionNone
+		},
+		Extensions: []tls.TLSExtension{
+			&tls.RenegotiationInfoExtension{Renegotiation: tls.RenegotiateOnceAsClient},
+			&tls.SNIExtension{},
+			&tls.UtlsExtendedMasterSecretExtension{},
+			&tls.SignatureAlgorithmsExtension{SupportedSignatureAlgorithms: []tls.SignatureScheme{
+				tls.ECDSAWithP256AndSHA256,
+				tls.PSSWithSHA256,
+				tls.PKCS1WithSHA256,
+				tls.ECDSAWithP384AndSHA384,
+				tls.ECDSAWithSHA1,
+				tls.PSSWithSHA384,
+				tls.PSSWithSHA384,
+				tls.PKCS1WithSHA384,
+				tls.PSSWithSHA512,
+				tls.PKCS1WithSHA512,
+				tls.PKCS1WithSHA1,
+			}},
+			&tls.StatusRequestExtension{},
+			&tls.SCTExtension{},
+			&tls.ALPNExtension{AlpnProtocols: []string{"h2", "http/1.1"}},
+			&tls.SupportedPointsExtension{SupportedPoints: []byte{
+				0x00, // pointFormatUncompressed
+			}},
+			&tls.KeyShareExtension{[]tls.KeyShare{
+				{Group: tls.X25519},
+			}},
+			&tls.PSKKeyExchangeModesExtension{[]uint8{
+				tls.PskModeDHE,
+			}},
+			&tls.SupportedVersionsExtension{[]uint16{
+				tls.VersionTLS13,
+				tls.VersionTLS12,
+				tls.VersionTLS11,
+				tls.VersionTLS10,
+			}},
+			&tls.SupportedCurvesExtension{[]tls.CurveID{
+				tls.X25519,
+				tls.CurveP256,
+				tls.CurveP384,
+				tls.CurveP521,
+			}},
+			&tls.UtlsPaddingExtension{GetPaddingLen: tls.BoringPaddingStyle},
+		},
+	}
+
+}
+
+// Used by psiphon https://github.com/Psiphon-Labs/psiphon-tunnel-core/blob/f2906e7f19470e0e249d30053333c6a5bf1efcc0/psiphon/tlsDialer.go#L770
+// iOS 12.1
+func specIOS12_1() tls.ClientHelloSpec {
+
+	return tls.ClientHelloSpec{
+		CipherSuites: []uint16{
+			tls.TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,
+			tls.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,
+			tls.DISABLED_TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA384,
+			tls.TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256,
+			tls.TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA,
+			tls.TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA,
+			tls.TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305,
+			tls.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
+			tls.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
+			tls.DISABLED_TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA384,
+			tls.TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256,
+			tls.TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA,
+			tls.TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA,
+			tls.TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305,
+			tls.TLS_RSA_WITH_AES_256_GCM_SHA384,
+			tls.TLS_RSA_WITH_AES_128_GCM_SHA256,
+			tls.DISABLED_TLS_RSA_WITH_AES_256_CBC_SHA256,
+			tls.TLS_RSA_WITH_AES_128_CBC_SHA256,
+			tls.TLS_RSA_WITH_AES_256_CBC_SHA,
+			tls.TLS_RSA_WITH_AES_128_CBC_SHA,
+			0xc008,
+			tls.TLS_ECDHE_RSA_WITH_3DES_EDE_CBC_SHA,
+			tls.TLS_RSA_WITH_3DES_EDE_CBC_SHA,
+		},
+		CompressionMethods: []byte{
+			0x00, // compressionNone
+		},
+		Extensions: []tls.TLSExtension{
+			&tls.RenegotiationInfoExtension{Renegotiation: tls.RenegotiateOnceAsClient},
+			&tls.SNIExtension{},
+			&tls.UtlsExtendedMasterSecretExtension{},
+			&tls.SignatureAlgorithmsExtension{SupportedSignatureAlgorithms: []tls.SignatureScheme{
+				tls.ECDSAWithP256AndSHA256,
+				tls.PSSWithSHA256,
+				tls.PKCS1WithSHA256,
+				tls.ECDSAWithP384AndSHA384,
+				tls.ECDSAWithSHA1,
+				tls.PSSWithSHA384,
+				tls.PSSWithSHA384,
+				tls.PKCS1WithSHA384,
+				tls.PSSWithSHA512,
+				tls.PKCS1WithSHA512,
+				tls.PKCS1WithSHA1,
+			}},
+			&tls.StatusRequestExtension{},
+			&tls.NPNExtension{},
+			&tls.SCTExtension{},
+			&tls.ALPNExtension{AlpnProtocols: []string{"h2", "h2-16", "h2-15", "h2-14", "spdy/3.1", "spdy/3", "http/1.1"}},
+			&tls.SupportedPointsExtension{SupportedPoints: []byte{
+				0x00, // pointFormatUncompressed
+			}},
+			&tls.SupportedCurvesExtension{[]tls.CurveID{
+				tls.X25519,
+				tls.CurveP256,
+				tls.CurveP384,
+				tls.CurveP521,
+			}},
+		},
+	}
+
+}
+
+// Used by psiphon https://github.com/Psiphon-Labs/psiphon-tunnel-core/blob/f2906e7f19470e0e249d30053333c6a5bf1efcc0/psiphon/tlsDialer.go#L767
+// iOS 11.1
+func specIOS_11_1() tls.ClientHelloSpec {
+
+	return tls.ClientHelloSpec{
+		TLSVersMax: tls.VersionTLS12,
+		TLSVersMin: tls.VersionTLS10,
+		CipherSuites: []uint16{
+			tls.TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,
+			tls.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,
+			tls.DISABLED_TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA384,
+			tls.TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256,
+			tls.TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA,
+			tls.TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA,
+			tls.TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305,
+			tls.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
+			tls.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
+			tls.DISABLED_TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA384,
+			tls.TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256,
+			tls.TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA,
+			tls.TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA,
+			tls.TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305,
+			tls.TLS_RSA_WITH_AES_256_GCM_SHA384,
+			tls.TLS_RSA_WITH_AES_128_GCM_SHA256,
+			tls.DISABLED_TLS_RSA_WITH_AES_256_CBC_SHA256,
+			tls.TLS_RSA_WITH_AES_128_CBC_SHA256,
+			tls.TLS_RSA_WITH_AES_256_CBC_SHA,
+			tls.TLS_RSA_WITH_AES_128_CBC_SHA,
+		},
+		CompressionMethods: []byte{
+			0x00, // compressionNone
+		},
+		Extensions: []tls.TLSExtension{
+			&tls.RenegotiationInfoExtension{Renegotiation: tls.RenegotiateOnceAsClient},
+			&tls.SNIExtension{},
+			&tls.UtlsExtendedMasterSecretExtension{},
+			&tls.SignatureAlgorithmsExtension{SupportedSignatureAlgorithms: []tls.SignatureScheme{
+				tls.ECDSAWithP256AndSHA256,
+				tls.PSSWithSHA256,
+				tls.PKCS1WithSHA256,
+				tls.ECDSAWithP384AndSHA384,
+				tls.PSSWithSHA384,
+				tls.PKCS1WithSHA384,
+				tls.PSSWithSHA512,
+				tls.PKCS1WithSHA512,
+				tls.PKCS1WithSHA1,
+			}},
+			&tls.StatusRequestExtension{},
+			&tls.NPNExtension{},
+			&tls.SCTExtension{},
+			&tls.ALPNExtension{AlpnProtocols: []string{"h2", "h2-16", "h2-15", "h2-14", "spdy/3.1", "spdy/3", "http/1.1"}},
+			&tls.SupportedPointsExtension{SupportedPoints: []byte{
+				0x00, // pointFormatUncompressed
+			}},
+			&tls.SupportedCurvesExtension{Curves: []tls.CurveID{
+				tls.X25519,
+				tls.CurveP256,
+				tls.CurveP384,
+				tls.CurveP521,
+			}},
+		},
+	}
+
+}
+
+// https://tlsfingerprint.io/id/e47eae8f8c4887b6
+// Version 1.45.133 Chromium: 107.0.5304.141 (Official Build) (64-bit)
+func specBrave() tls.ClientHelloSpec {
+	return tls.ClientHelloSpec{
+		CipherSuites: []uint16{
+			tls.GREASE_PLACEHOLDER,
+			tls.TLS_AES_128_GCM_SHA256,
+			tls.TLS_AES_256_GCM_SHA384,
+			tls.TLS_CHACHA20_POLY1305_SHA256,
+			tls.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,
+			tls.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
+			tls.TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,
+			tls.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
+			tls.TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305,
+			tls.TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305,
+			tls.TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA,
+			tls.TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA,
+			tls.TLS_RSA_WITH_AES_128_GCM_SHA256,
+			tls.TLS_RSA_WITH_AES_256_GCM_SHA384,
+			tls.TLS_RSA_WITH_AES_128_CBC_SHA,
+			tls.TLS_RSA_WITH_AES_256_CBC_SHA,
+		},
+		CompressionMethods: []byte{
+			0x00, // compressionNone
+		},
+		Extensions: []tls.TLSExtension{
+			&tls.UtlsGREASEExtension{},
+			&tls.SNIExtension{},
+			&tls.UtlsExtendedMasterSecretExtension{},
+			&tls.RenegotiationInfoExtension{Renegotiation: tls.RenegotiateOnceAsClient},
+			&tls.SupportedCurvesExtension{[]tls.CurveID{
+				tls.CurveID(tls.GREASE_PLACEHOLDER),
+				tls.X25519,
+				tls.CurveP256,
+				tls.CurveP384,
+			}},
+			&tls.SupportedPointsExtension{SupportedPoints: []byte{
+				0x00, // pointFormatUncompressed
+			}},
+			&tls.SessionTicketExtension{},
+			&tls.ALPNExtension{AlpnProtocols: []string{"h2", "http/1.1"}},
+			&tls.StatusRequestExtension{},
+			&tls.SignatureAlgorithmsExtension{SupportedSignatureAlgorithms: []tls.SignatureScheme{
+				tls.ECDSAWithP256AndSHA256,
+				tls.PSSWithSHA256,
+				tls.PKCS1WithSHA256,
+				tls.ECDSAWithP384AndSHA384,
+				tls.PSSWithSHA384,
+				tls.PKCS1WithSHA384,
+				tls.PSSWithSHA512,
+				tls.PKCS1WithSHA512,
+			}},
+			&tls.SCTExtension{},
+			&tls.KeyShareExtension{[]tls.KeyShare{
+				{Group: tls.CurveID(tls.GREASE_PLACEHOLDER), Data: []byte{0}},
+				{Group: tls.X25519},
+			}},
+			&tls.PSKKeyExchangeModesExtension{[]uint8{
+				tls.PskModeDHE,
+			}},
+			&tls.SupportedVersionsExtension{[]uint16{
+				tls.GREASE_PLACEHOLDER,
+				tls.VersionTLS13,
+				tls.VersionTLS12,
+			}},
+			&tls.UtlsCompressCertExtension{},
+			&tls.GenericExtension{Id: 0x4469}, // WARNING: UNKNOWN EXTENSION, USE AT YOUR OWN RISK
+			&tls.UtlsGREASEExtension{},
+			&tls.UtlsPaddingExtension{GetPaddingLen: tls.BoringPaddingStyle},
+		},
+	}
+}
+
+// https://tlsfingerprint.io/id/b250617dca0ac79f
+// Firefox-107 TLS fingerprint
+func specFirefox107() tls.ClientHelloSpec {
+	return tls.ClientHelloSpec{
+		CipherSuites: []uint16{
+			tls.TLS_AES_128_GCM_SHA256,
+			tls.TLS_CHACHA20_POLY1305_SHA256,
+			tls.TLS_AES_256_GCM_SHA384,
+			tls.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,
+			tls.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
+			tls.TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305,
+			tls.TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305,
+			tls.TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,
+			tls.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
+			tls.TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA,
+			tls.TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA,
+			tls.TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA,
+			tls.TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA,
+			tls.TLS_RSA_WITH_AES_128_GCM_SHA256,
+			tls.TLS_RSA_WITH_AES_256_GCM_SHA384,
+			tls.TLS_RSA_WITH_AES_128_CBC_SHA,
+			tls.TLS_RSA_WITH_AES_256_CBC_SHA,
+		},
+		CompressionMethods: []byte{
+			0x00, // compressionNone
+		},
+		Extensions: []tls.TLSExtension{
+			&tls.SNIExtension{},
+			&tls.UtlsExtendedMasterSecretExtension{},
+			&tls.RenegotiationInfoExtension{Renegotiation: tls.RenegotiateOnceAsClient},
+			&tls.SupportedCurvesExtension{[]tls.CurveID{
+				tls.X25519,
+				tls.CurveP256,
+				tls.CurveP384,
+				tls.CurveP521,
+				0x0100,
+				0x0101,
+			}},
+			&tls.SupportedPointsExtension{SupportedPoints: []byte{
+				0x00, // pointFormatUncompressed
+			}},
+			&tls.SessionTicketExtension{},
+			&tls.ALPNExtension{AlpnProtocols: []string{"h2", "http/1.1"}},
+			&tls.StatusRequestExtension{},
+			&tls.GenericExtension{Id: 0x0022}, // WARNING: UNKNOWN EXTENSION, USE AT YOUR OWN RISK
+			&tls.KeyShareExtension{[]tls.KeyShare{
+				{Group: tls.X25519},
+				{Group: tls.CurveP256},
+			}},
+			&tls.SupportedVersionsExtension{[]uint16{
+				tls.VersionTLS13,
+				tls.VersionTLS12,
+			}},
+			&tls.SignatureAlgorithmsExtension{SupportedSignatureAlgorithms: []tls.SignatureScheme{
+				tls.ECDSAWithP256AndSHA256,
+				tls.ECDSAWithP384AndSHA384,
+				tls.ECDSAWithP521AndSHA512,
+				tls.PSSWithSHA256,
+				tls.PSSWithSHA384,
+				tls.PSSWithSHA512,
+				tls.PKCS1WithSHA256,
+				tls.PKCS1WithSHA384,
+				tls.PKCS1WithSHA512,
+				tls.ECDSAWithSHA1,
+				tls.PKCS1WithSHA1,
+			}},
+			&tls.PSKKeyExchangeModesExtension{[]uint8{
+				tls.PskModeDHE,
+			}},
+			&tls.FakeRecordSizeLimitExtension{16385},
+
+			&tls.UtlsPaddingExtension{GetPaddingLen: tls.BoringPaddingStyle},
+		},
+	}
+}
+
+// https://tlsfingerprint.io/id/4d22f45843fe821a
+// Safari, but not sure which version
+func specSafari() tls.ClientHelloSpec {
+	return tls.ClientHelloSpec{
+		CipherSuites: []uint16{
+			tls.GREASE_PLACEHOLDER,
+			tls.TLS_AES_128_GCM_SHA256,
+			tls.TLS_AES_256_GCM_SHA384,
+			tls.TLS_CHACHA20_POLY1305_SHA256,
+			tls.TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,
+			tls.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,
+			tls.TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305,
+			tls.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
+			tls.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
+			tls.TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305,
+			tls.TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA,
+			tls.TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA,
+			tls.TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA,
+			tls.TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA,
+			tls.TLS_RSA_WITH_AES_256_GCM_SHA384,
+			tls.TLS_RSA_WITH_AES_128_GCM_SHA256,
+			tls.TLS_RSA_WITH_AES_256_CBC_SHA,
+			tls.TLS_RSA_WITH_AES_128_CBC_SHA,
+			0xc008,
+			tls.TLS_ECDHE_RSA_WITH_3DES_EDE_CBC_SHA,
+			tls.TLS_RSA_WITH_3DES_EDE_CBC_SHA,
+		},
+		CompressionMethods: []byte{
+			0x00, // compressionNone
+		},
+		Extensions: []tls.TLSExtension{
+			&tls.UtlsGREASEExtension{},
+			&tls.SNIExtension{},
+			&tls.UtlsExtendedMasterSecretExtension{},
+			&tls.RenegotiationInfoExtension{Renegotiation: tls.RenegotiateOnceAsClient},
+			&tls.SupportedCurvesExtension{[]tls.CurveID{
+				tls.CurveID(tls.GREASE_PLACEHOLDER),
+				tls.X25519,
+				tls.CurveP256,
+				tls.CurveP384,
+				tls.CurveP521,
+			}},
+			&tls.SupportedPointsExtension{SupportedPoints: []byte{
+				0x00, // pointFormatUncompressed
+			}},
+			&tls.ALPNExtension{AlpnProtocols: []string{"h2", "http/1.1"}},
+			&tls.StatusRequestExtension{},
+			&tls.SignatureAlgorithmsExtension{SupportedSignatureAlgorithms: []tls.SignatureScheme{
+				tls.ECDSAWithP256AndSHA256,
+				tls.PSSWithSHA256,
+				tls.PKCS1WithSHA256,
+				tls.ECDSAWithP384AndSHA384,
+				tls.ECDSAWithSHA1,
+				tls.PSSWithSHA384,
+				tls.PSSWithSHA384,
+				tls.PKCS1WithSHA384,
+				tls.PSSWithSHA512,
+				tls.PKCS1WithSHA512,
+				tls.PKCS1WithSHA1,
+			}},
+			&tls.SCTExtension{},
+			&tls.KeyShareExtension{[]tls.KeyShare{
+				{Group: tls.CurveID(tls.GREASE_PLACEHOLDER), Data: []byte{0}},
+				{Group: tls.X25519},
+			}},
+			&tls.PSKKeyExchangeModesExtension{[]uint8{
+				tls.PskModeDHE,
+			}},
+			&tls.SupportedVersionsExtension{[]uint16{
+				tls.GREASE_PLACEHOLDER,
+				tls.VersionTLS13,
+				tls.VersionTLS12,
+				tls.VersionTLS11,
+				tls.VersionTLS10,
+			}},
+			&tls.UtlsCompressCertExtension{},
+			&tls.UtlsGREASEExtension{},
+			&tls.UtlsPaddingExtension{GetPaddingLen: tls.BoringPaddingStyle},
+		},
+	}
+}
+
+// https://tlsfingerprint.io/id/750e3f0f585283bd
+// Xray TLS fingerprint
+func specXray() tls.ClientHelloSpec {
+	return tls.ClientHelloSpec{
+		CipherSuites: []uint16{
+			tls.TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305,
+			tls.TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305,
+			tls.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,
+			tls.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
+			tls.TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,
+			tls.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
+			tls.TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA,
+			tls.TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA,
+			tls.TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA,
+			tls.TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA,
+			tls.TLS_RSA_WITH_AES_128_GCM_SHA256,
+			tls.TLS_RSA_WITH_AES_256_GCM_SHA384,
+			tls.TLS_RSA_WITH_AES_128_CBC_SHA,
+			tls.TLS_RSA_WITH_AES_256_CBC_SHA,
+			tls.TLS_ECDHE_RSA_WITH_3DES_EDE_CBC_SHA,
+			tls.TLS_RSA_WITH_3DES_EDE_CBC_SHA,
+			tls.TLS_CHACHA20_POLY1305_SHA256,
+			tls.TLS_AES_128_GCM_SHA256,
+			tls.TLS_AES_256_GCM_SHA384,
+		},
+		CompressionMethods: []byte{
+			0x00, // compressionNone
+		},
+		Extensions: []tls.TLSExtension{
+			&tls.SNIExtension{},
+			&tls.StatusRequestExtension{},
+			&tls.SupportedCurvesExtension{[]tls.CurveID{
+				tls.X25519,
+				tls.CurveP256,
+				tls.CurveP384,
+				tls.CurveP521,
+			}},
+			&tls.SupportedPointsExtension{SupportedPoints: []byte{
+				0x00, // pointFormatUncompressed
+			}},
+			&tls.SignatureAlgorithmsExtension{SupportedSignatureAlgorithms: []tls.SignatureScheme{
+				tls.PSSWithSHA256,
+				tls.ECDSAWithP256AndSHA256,
+				0x0807,
+				tls.PSSWithSHA384,
+				tls.PSSWithSHA512,
+				tls.PKCS1WithSHA256,
+				tls.PKCS1WithSHA384,
+				tls.PKCS1WithSHA512,
+				tls.ECDSAWithP384AndSHA384,
+				tls.ECDSAWithP521AndSHA512,
+				tls.PKCS1WithSHA1,
+				tls.ECDSAWithSHA1,
+			}},
+			&tls.RenegotiationInfoExtension{Renegotiation: tls.RenegotiateOnceAsClient},
+			&tls.ALPNExtension{AlpnProtocols: []string{"http/1.1"}},
+			&tls.SCTExtension{},
+			&tls.SupportedVersionsExtension{[]uint16{
+				tls.VersionTLS13,
+				tls.VersionTLS12,
+			}},
+			&tls.KeyShareExtension{[]tls.KeyShare{
+				{Group: tls.X25519},
+			}},
+		},
+	}
+}
+
+// https://tlsfingerprint.io/id/7a904d1db96cf046
+// Xray TLS ping fingerprint
+func specXrayTLSPing() tls.ClientHelloSpec {
+	return tls.ClientHelloSpec{
+		CipherSuites: []uint16{
+			tls.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,
+			tls.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
+			tls.TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,
+			tls.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
+			tls.TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305,
+			tls.TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305,
+			tls.TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA,
+			tls.TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA,
+			tls.TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA,
+			tls.TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA,
+			tls.TLS_RSA_WITH_AES_128_GCM_SHA256,
+			tls.TLS_RSA_WITH_AES_256_GCM_SHA384,
+			tls.TLS_RSA_WITH_AES_128_CBC_SHA,
+			tls.TLS_RSA_WITH_AES_256_CBC_SHA,
+			tls.TLS_ECDHE_RSA_WITH_3DES_EDE_CBC_SHA,
+			tls.TLS_RSA_WITH_3DES_EDE_CBC_SHA,
+		},
+		CompressionMethods: []byte{
+			0x00, // compressionNone
+		},
+		Extensions: []tls.TLSExtension{
+			&tls.StatusRequestExtension{},
+			&tls.SupportedCurvesExtension{[]tls.CurveID{
+				tls.X25519,
+				tls.CurveP256,
+				tls.CurveP384,
+				tls.CurveP521,
+			}},
+			&tls.SupportedPointsExtension{SupportedPoints: []byte{
+				0x00, // pointFormatUncompressed
+			}},
+			&tls.SignatureAlgorithmsExtension{SupportedSignatureAlgorithms: []tls.SignatureScheme{
+				tls.PSSWithSHA256,
+				tls.ECDSAWithP256AndSHA256,
+				0x0807,
+				tls.PSSWithSHA384,
+				tls.PSSWithSHA512,
+				tls.PKCS1WithSHA256,
+				tls.PKCS1WithSHA384,
+				tls.PKCS1WithSHA512,
+				tls.ECDSAWithP384AndSHA384,
+				tls.ECDSAWithP521AndSHA512,
+				tls.PKCS1WithSHA1,
+				tls.ECDSAWithSHA1,
+			}},
+			&tls.RenegotiationInfoExtension{Renegotiation: tls.RenegotiateOnceAsClient},
+			&tls.ALPNExtension{AlpnProtocols: []string{"http/1.1"}},
+			&tls.SCTExtension{},
+			&tls.SupportedVersionsExtension{[]uint16{
+				tls.VersionTLS12,
+			}},
+		},
+	}
+
+}
+
+// https://github.com/refraction-networking/gotapdance/blob/master/tapdance/conn_raw.go#L292
 func specChrome62() tls.ClientHelloSpec {
 	return tls.ClientHelloSpec{
 		TLSVersMax: tls.VersionTLS12,
@@ -616,32 +2150,98 @@ func (j *Job) Str() string {
 	return fmt.Sprintf("%s_%s_%s", j.Host, j.Sni, j.Fprint)
 }
 
-func (j *Job) ClientHelloSpec() (clientHelloSpec tls.ClientHelloSpec) {
+func (j *Job) ClientHelloSpec() (srcPort int, clientHelloSpec tls.ClientHelloSpec) {
 	//var clientHelloSpec tls.ClientHelloSpec
+	rand.Seed(time.Now().UnixNano())
+	rand_srcPort := rand.Intn(64485) + 1024
+
 	if j.Fprint == "chrome-105" {
+		srcPort = rand_srcPort - (rand_srcPort % 23) + 0
 		clientHelloSpec = specChrome105()
 	} else if j.Fprint == "chrome-62" {
+		srcPort = rand_srcPort - (rand_srcPort % 23) + 1
 		clientHelloSpec = specChrome62()
 	} else if j.Fprint == "go" {
+		srcPort = rand_srcPort - (rand_srcPort % 23) + 2
 		clientHelloSpec = specGolang()
 	} else if j.Fprint == "openssl" {
+		srcPort = rand_srcPort - (rand_srcPort % 23) + 3
 		clientHelloSpec = specOpenssl()
 	} else if j.Fprint == "random" {
+		srcPort = rand_srcPort - (rand_srcPort % 23) + 4
 		clientHelloSpec = specRandom()
+	} else if j.Fprint == "firefox-107" {
+		srcPort = rand_srcPort - (rand_srcPort % 23) + 5
+		clientHelloSpec = specFirefox107()
+	} else if j.Fprint == "safari" {
+		srcPort = rand_srcPort - (rand_srcPort % 23) + 6
+		clientHelloSpec = specSafari()
+	} else if j.Fprint == "xray" {
+		srcPort = rand_srcPort - (rand_srcPort % 23) + 7
+		clientHelloSpec = specXray()
+	} else if j.Fprint == "brave" {
+		srcPort = rand_srcPort - (rand_srcPort % 23) + 8
+		clientHelloSpec = specBrave()
+	} else if j.Fprint == "ios-11.1" {
+		srcPort = rand_srcPort - (rand_srcPort % 23) + 9
+		clientHelloSpec = specIOS_11_1()
+	} else if j.Fprint == "ios-12.1" {
+		srcPort = rand_srcPort - (rand_srcPort % 23) + 10
+		clientHelloSpec = specIOS12_1()
+	} else if j.Fprint == "ios-13" {
+		srcPort = rand_srcPort - (rand_srcPort % 23) + 11
+		clientHelloSpec = specIOS13()
+	} else if j.Fprint == "ios-14" {
+		srcPort = rand_srcPort - (rand_srcPort % 23) + 12
+		clientHelloSpec = specIOS14()
+	} else if j.Fprint == "chrome-58" {
+		srcPort = rand_srcPort - (rand_srcPort % 23) + 13
+		clientHelloSpec = specChrome58()
+	} else if j.Fprint == "chrome-70" {
+		srcPort = rand_srcPort - (rand_srcPort % 23) + 14
+		clientHelloSpec = specChrome70()
+	} else if j.Fprint == "chrome-72" {
+		srcPort = rand_srcPort - (rand_srcPort % 23) + 15
+		clientHelloSpec = specChrome72()
+	} else if j.Fprint == "chrome-83" {
+		srcPort = rand_srcPort - (rand_srcPort % 23) + 16
+		clientHelloSpec = specChrome83()
+	} else if j.Fprint == "chrome-96" {
+		srcPort = rand_srcPort - (rand_srcPort % 23) + 17
+		clientHelloSpec = specChrome96()
+	} else if j.Fprint == "chrome-102" {
+		srcPort = rand_srcPort - (rand_srcPort % 23) + 18
+		clientHelloSpec = specChrome102()
+	} else if j.Fprint == "firefox-55" || j.Fprint == "firefox-56" {
+		srcPort = rand_srcPort - (rand_srcPort % 23) + 19
+		clientHelloSpec = specFirefox55_and_56()
+	} else if j.Fprint == "firefox-65" || j.Fprint == "firefox-63" {
+		srcPort = rand_srcPort - (rand_srcPort % 23) + 20
+		clientHelloSpec = specFirefox65()
+	} else if j.Fprint == "firefox-99" {
+		srcPort = rand_srcPort - (rand_srcPort % 23) + 21
+		clientHelloSpec = specFirefox99()
+	} else if j.Fprint == "firefox-105" {
+		srcPort = rand_srcPort - (rand_srcPort % 23) + 22
+		clientHelloSpec = specFirefox105()
 	} else {
 		log.Fatalf("Error unknown fprint: %s\n", j.Fprint)
 		clientHelloSpec = tls.ClientHelloSpec{} // nil
 	}
+
 	return
 }
 
-func test(job Job, skipVerify bool, timeout time.Duration) {
+func test(job Job, skipVerify bool, timeout time.Duration, localIP string) {
 
 	// Get the spec first so if it's not a real one, we can exit early
-	clientHelloSpec := job.ClientHelloSpec()
+	srcPort, clientHelloSpec := job.ClientHelloSpec()
 
 	// Connect to TCP
-	d := net.Dialer{Timeout: timeout}
+	d := net.Dialer{Timeout: timeout, LocalAddr: &net.TCPAddr{
+		IP:   net.ParseIP(localIP),
+		Port: srcPort,
+	}}
 	tcpConn, err := d.Dial("tcp", fmt.Sprintf("%s:%d", job.Host, job.Port))
 	if err != nil {
 		fmt.Printf("RES %s conn_timeout\n", job.Str())
@@ -682,7 +2282,7 @@ func test(job Job, skipVerify bool, timeout time.Duration) {
 	//fmt.Printf("Grease: %d\n", tlsConn.HandshakeState.Hello.Raw[7*16+2])
 
 	// Read back something
-	buf := make([]byte, 500)
+	buf := make([]byte, 1500)
 	n, err = tlsConn.Read(buf)
 	if err != nil {
 		fmt.Printf("RES %s read_timeout\n", job.Str())
@@ -694,11 +2294,11 @@ func test(job Job, skipVerify bool, timeout time.Duration) {
 	fmt.Printf("RES %s allowed\n", job.Str())
 }
 
-func worker(id int, jobs chan Job, timeout time.Duration) {
+func worker(id int, jobs chan Job, timeout time.Duration, localIP string) {
 	for job := range jobs {
 		log.Printf("worker %d testing %s\n", id, job.Str())
 
-		test(job, true, timeout)
+		test(job, true, timeout, localIP)
 		log.Printf("worker %d done\n", id)
 	}
 }
@@ -708,15 +2308,20 @@ func main() {
 	host := flag.String("host", "tlsfingerprint.io", "Host to connect to")
 	port := flag.Int("port", 443, "Port to connect to on host")
 	sni := flag.String("sni", "", "Servername indiciation extension to send (use -nosni for none). Defaults to host if empty")
-	fprint := flag.String("fprint", "chrome-105", "Fingerprint to send. Currently supported: chrome-105, go, openssl")
+	fprint := flag.String("fprint", "chrome-105", "Fingerprint to send.")
 	nosni := flag.Bool("nosni", false, "Provide if you don't want to send an SNI")
 	isv := flag.Bool("insecureSkipVerify", false, "Set if you want to not check certs")
-	timeout := flag.Duration("timeout", 6*time.Second, "timeout value of TCP connections.")
+	timeout := flag.Duration("timeout", 5*time.Second, "timeout value of TCP connections.")
 	logFile := flag.String("log", "", "log to file.  (default stderr)")
 	stdin := flag.Bool("stdin", false, "Set if you are providing a list of domains on stdin. We will try 3*n*n connections, for each combination of domain, sni, and fprint")
 	workers := flag.Int("worker", 50, "number of workers in parallel")
+	localIP := flag.String("localAddr", "", "Local IP of the machine runing this program")
 	flag.Parse()
 
+	if *localIP == "" {
+		fmt.Println("Please provide the local IP of the machine runing this program using -localAddr option")
+		os.Exit(1)
+	}
 	// log, intentionally make it blocking to make sure it got
 	// initiliazed before other parts using it
 	if *logFile != "" {
@@ -744,7 +2349,7 @@ func main() {
 			wg.Add(1)
 			go func(w int) {
 				defer wg.Done()
-				worker(w, jobs, *timeout)
+				worker(w, jobs, *timeout, *localIP)
 			}(w)
 		}
 
@@ -757,13 +2362,10 @@ func main() {
 		if err := scanner.Err(); err != nil {
 			log.Println(err)
 		}
-
 		for _, h := range domains {
-			for _, s := range domains {
-				for _, fp := range []string{"go", "openssl", "chrome-105", "chrome-62", "random"} {
-					job := Job{Host: h, Sni: s, Fprint: fp, Port: 443}
-					jobs <- job
-				}
+			for _, fp := range []string{"go", "openssl", "chrome-105", "chrome-62", "random", "firefox-107", "brave", "xray", "safari", "ios-11.1", "ios-12.1", "ios-13", "ios-14", "chrome-58", "chrome-70", "chrome-72", "chrome-83", "chrome-96", "chrome-102", "firefox-55", "firefox-65", "firefox-99", "firefox-105"} {
+				job := Job{Host: h, Sni: h, Fprint: fp, Port: 443}
+				jobs <- job
 			}
 		}
 		close(jobs)
@@ -773,6 +2375,6 @@ func main() {
 	} else {
 		// Just one
 		job := Job{Host: *host, Sni: *sni, Fprint: *fprint, Port: *port}
-		test(job, *isv, *timeout)
+		test(job, *isv, *timeout, *localIP)
 	}
 }
